@@ -1,8 +1,13 @@
 package com.vanshika.parkit.admin.screen.home
 
+import android.app.Activity
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.Intent
+import android.speech.RecognizerIntent
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,13 +19,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.google.firebase.Timestamp
+import com.vanshika.parkit.R
 import com.vanshika.parkit.admin.data.model.BookingDetailsDataClass
 import com.vanshika.parkit.admin.viewmodel.BookingViewModel
+import com.vanshika.parkit.ui.theme.ThemePreference
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -44,6 +53,7 @@ fun ReserveBookingPage(
     var username by remember { mutableStateOf("") }
     var contactNo by remember { mutableStateOf("") }
     var priorityTag by remember { mutableStateOf("") }
+
     var datePicked by remember { mutableStateOf("") }
     var startTimePicked by remember { mutableStateOf("") }
     var endTimePicked by remember { mutableStateOf("") }
@@ -55,55 +65,95 @@ fun ReserveBookingPage(
     var usernameError by remember { mutableStateOf("") }
     var contactNoError by remember { mutableStateOf("") }
     var priorityTagError by remember { mutableStateOf("") }
+
     var dateError by remember { mutableStateOf("") }
     var timeError by remember { mutableStateOf("") }
 
     // Dropdown states
     val priorityOptions = listOf("Normal", "Staff", "Student")
     var priorityExpanded by remember { mutableStateOf(false) }
-    var vehicleNoExpanded by remember { mutableStateOf(false) }
-    var usernameExpanded by remember { mutableStateOf(false) }
-    var userIdExpanded by remember { mutableStateOf(false) }
 
     val dateFormatter = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
     val timeFormatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
-    val dateTimeFormatter = SimpleDateFormat("dd MMM yyyy hh:mm a", Locale.getDefault())
+
+    val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
+
+    val allBookings by viewModel.allBookings
 
     LaunchedEffect(Unit) {
         viewModel.loadAllBookings()
     }
 
-    val allBookings by viewModel.allBookings
-
     // Current booking for this slot
     val currentBooking = remember { mutableStateOf<BookingDetailsDataClass?>(null) }
+
     LaunchedEffect(allBookings) {
         currentBooking.value = allBookings.find { it.slotId == slotId }
     }
 
-    // Vehicle No suggestions
+    // Vehicle Number suggestions from bookings
     val vehicleNoSuggestions by remember(vehicleNo, allBookings) {
         derivedStateOf {
             if (vehicleNo.isBlank()) emptyList()
-            else allBookings.mapNotNull { it.vehicleNumber }.distinct()
+            else allBookings
+                .mapNotNull { it -> it.vehicleNumber?.takeIf { it.isNotBlank() } }
+                .distinct()
                 .filter { it.contains(vehicleNo, ignoreCase = true) }
         }
     }
+    var vehicleNoExpanded by remember { mutableStateOf(false) }
 
-    // User ID suggestions
     val userIdSuggestions by remember(userId, allBookings) {
         derivedStateOf {
             if (userId.isBlank()) emptyList()
-            else allBookings.filter { it.customUserId.contains(userId, ignoreCase = true) }
+            else allBookings
+                .filter { it.customUserId.contains(userId, ignoreCase = true) }
         }
     }
+    var userIdExpanded by remember { mutableStateOf(false) }
 
-    // Username suggestions
     val usernameSuggestions by remember(username, allBookings) {
         derivedStateOf {
             if (username.isBlank()) emptyList()
-            else allBookings.filter { it.userName.contains(username, ignoreCase = true) }
+            else allBookings
+                .filter { it.userName.contains(username, ignoreCase = true) }
         }
+    }
+    var usernameExpanded by remember { mutableStateOf(false) }
+
+    // ---- Speech-to-Text Setup ----
+    var activeField by remember { mutableStateOf<String?>(null) }
+
+    val speechLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spokenText = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()
+            spokenText?.let {
+                when (activeField) {
+                    "vehicleNo" -> vehicleNo = it
+                    "vehicleType" -> vehicleType = it
+                    "userId" -> userId = it
+                    "username" -> username = it
+                    "contactNo" -> contactNo = it
+                }
+            }
+        }
+    }
+
+    fun startListeningFor(field: String) {
+        activeField = field
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+            )
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...")
+        }
+        speechLauncher.launch(intent)
     }
 
     Column(
@@ -121,8 +171,13 @@ fun ReserveBookingPage(
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(6.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
+            elevation = CardDefaults.cardElevation(0.dp), // prevents overlay
+            colors = CardDefaults.cardColors(
+                containerColor = if (isDarkTheme)
+                    Color.Black
+                else
+                    Color.White
+            )
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -142,7 +197,14 @@ fun ReserveBookingPage(
                         label = { Text("Vehicle Number") },
                         isError = vehicleNoError.isNotEmpty(),
                         placeholder = { Text("e.g. MH12AB1234") },
-                        trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) },
+                        trailingIcon = {
+                            IconButton(onClick = { startListeningFor("vehicleNo") }) {
+                                Icon(
+                                    painterResource(id = R.drawable.baseline_mic_24),
+                                    contentDescription = "Speak Vehicle Number"
+                                )
+                            }
+                        },
                         singleLine = true,
                         modifier = Modifier
                             .menuAnchor()
@@ -151,16 +213,19 @@ fun ReserveBookingPage(
                     ExposedDropdownMenu(expanded = vehicleNoExpanded && vehicleNoSuggestions.isNotEmpty(),
                         onDismissRequest = { vehicleNoExpanded = false }) {
                         vehicleNoSuggestions.forEach { suggestion ->
-                            DropdownMenuItem(text = { Text(suggestion) }, onClick = {
-                                vehicleNo = suggestion
-                                val user = allBookings.find { it.vehicleNumber == suggestion }
-                                username = user?.userName ?: ""
-                                userId = user?.customUserId ?: ""
-                                contactNo = user?.contactNo ?: ""
-                                vehicleType = user?.vehicleType ?: ""
-                                priorityTag = user?.priorityTag ?: ""
-                                vehicleNoExpanded = false
-                            })
+                            DropdownMenuItem(
+                                text = { Text(suggestion) },
+                                onClick = {
+                                    vehicleNo = suggestion
+                                    val user = allBookings.find { it.vehicleNumber == suggestion }
+                                    username = user?.userName ?: ""
+                                    userId = user?.customUserId ?: ""
+                                    contactNo = user?.contactNo ?: ""
+                                    vehicleType = user?.vehicleType ?: ""
+                                    priorityTag = user?.priorityTag ?: ""
+                                    vehicleNoExpanded = false
+                                }
+                            )
                         }
                     }
                 }
@@ -179,6 +244,14 @@ fun ReserveBookingPage(
                             vehicleTypeError, color = MaterialTheme.colorScheme.error
                         )
                     },
+                    trailingIcon = {
+                        IconButton(onClick = { startListeningFor("vehicleType") }) {
+                            Icon(
+                                painterResource(id = R.drawable.baseline_mic_24),
+                                contentDescription = "Speak Vehicle Type"
+                            )
+                        }
+                    },
                     placeholder = { Text("Car, Bike, etc.") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -196,16 +269,27 @@ fun ReserveBookingPage(
                         },
                         label = { Text("User ID") },
                         isError = userIdError.isNotEmpty(),
+                        trailingIcon = {
+                            IconButton(onClick = { startListeningFor("userId") }) {
+                                Icon(
+                                    painterResource(id = R.drawable.baseline_mic_24),
+                                    contentDescription = "Speak User ID"
+                                )
+                            }
+                        },
                         singleLine = true,
                         placeholder = { Text("Enter User ID") },
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth()
                     )
-                    ExposedDropdownMenu(expanded = userIdExpanded && userIdSuggestions.isNotEmpty(),
-                        onDismissRequest = { userIdExpanded = false }) {
+                    ExposedDropdownMenu(
+                        expanded = userIdExpanded && userIdSuggestions.isNotEmpty(),
+                        onDismissRequest = { userIdExpanded = false }
+                    ) {
                         userIdSuggestions.forEach { user ->
-                            DropdownMenuItem(text = { Text("${user.customUserId} - ${user.userName}") },
+                            DropdownMenuItem(
+                                text = { Text("${user.customUserId} - ${user.userName}") },
                                 onClick = {
                                     userId = user.customUserId
                                     username = user.userName
@@ -214,7 +298,8 @@ fun ReserveBookingPage(
                                     vehicleType = user.vehicleType
                                     priorityTag = user.priorityTag
                                     userIdExpanded = false
-                                })
+                                }
+                            )
                         }
                     }
                 }
@@ -231,16 +316,27 @@ fun ReserveBookingPage(
                         },
                         label = { Text("Username") },
                         isError = usernameError.isNotEmpty(),
+                        trailingIcon = {
+                            IconButton(onClick = { startListeningFor("username") }) {
+                                Icon(
+                                    painterResource(id = R.drawable.baseline_mic_24),
+                                    contentDescription = "Speak Username"
+                                )
+                            }
+                        },
                         singleLine = true,
                         placeholder = { Text("Enter Customer Name") },
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth()
                     )
-                    ExposedDropdownMenu(expanded = usernameExpanded && usernameSuggestions.isNotEmpty(),
-                        onDismissRequest = { usernameExpanded = false }) {
+                    ExposedDropdownMenu(
+                        expanded = usernameExpanded && usernameSuggestions.isNotEmpty(),
+                        onDismissRequest = { usernameExpanded = false }
+                    ) {
                         usernameSuggestions.forEach { user ->
-                            DropdownMenuItem(text = { Text("${user.userName} - ${user.customUserId}") },
+                            DropdownMenuItem(
+                                text = { Text("${user.userName} - ${user.customUserId}") },
                                 onClick = {
                                     username = user.userName
                                     userId = user.customUserId
@@ -249,7 +345,8 @@ fun ReserveBookingPage(
                                     vehicleType = user.vehicleType
                                     priorityTag = user.priorityTag
                                     usernameExpanded = false
-                                })
+                                }
+                            )
                         }
                     }
                 }
@@ -282,6 +379,14 @@ fun ReserveBookingPage(
                         if (contactNoError.isNotEmpty()) Text(
                             contactNoError, color = MaterialTheme.colorScheme.error
                         )
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { startListeningFor("contactNo") }) {
+                            Icon(
+                                painterResource(id = R.drawable.baseline_mic_24),
+                                contentDescription = "Speak Contact Number"
+                            )
+                        }
                     },
                     singleLine = true,
                     placeholder = { Text("Enter Phone Number") },
@@ -394,6 +499,11 @@ fun ReserveBookingPage(
                 ) {
                     OutlinedButton(
                         onClick = {
+                            currentBooking.value?.let {
+                                viewModel.deleteBookings(it.slotId)
+                            }
+                            viewModel.updateSlotStatus(slotId, SlotStatus.AVAILABLE)
+
                             // Reset fields and revert slot status
                             vehicleNo = ""
                             vehicleType = ""
@@ -404,7 +514,7 @@ fun ReserveBookingPage(
                             datePicked = ""
                             startTimePicked = ""
                             endTimePicked = ""
-                            viewModel.updateSlotStatus(slotId, previousStatus)
+
                             Toast.makeText(context, "Booking Cancelled", Toast.LENGTH_SHORT).show()
                             onNavigateUp()
                         }, modifier = Modifier.weight(1f)
@@ -425,14 +535,16 @@ fun ReserveBookingPage(
 
                                 priorityTag.isBlank() -> priorityTagError = "Select one"
                                 else -> {
+                                    val dateTimeFormat =
+                                        SimpleDateFormat("dd MMM yyyy hh:mm a", Locale.getDefault())
+                                    val dayFormat =
+                                        SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+
+                                    val bookingDate = Timestamp(dayFormat.parse(datePicked)!!)
                                     val bookingStartTime =
-                                        dateTimeFormatter.parse("$datePicked $startTimePicked")!!
+                                        Timestamp(dateTimeFormat.parse("$datePicked $startTimePicked")!!)
                                     val bookingEndTime =
-                                        dateTimeFormatter.parse("$datePicked $endTimePicked")!!
-                                    val bookingDate =
-                                        SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).parse(
-                                            datePicked
-                                        )!!
+                                        Timestamp(dateTimeFormat.parse("$datePicked $endTimePicked")!!)
 
                                     val booking = BookingDetailsDataClass(
                                         bookedBy = username,
@@ -442,15 +554,18 @@ fun ReserveBookingPage(
                                         userName = username,
                                         slotId = slotId,
                                         zone = zoneName,
-                                        date = Timestamp(bookingDate),
+                                        date = bookingDate,
                                         status = SlotStatus.RESERVED,
-                                        bookingStartTime = Timestamp(bookingStartTime),
-                                        bookingEndTime = Timestamp(bookingEndTime),
+                                        bookingStartTime = bookingStartTime,
+                                        bookingEndTime = bookingEndTime,
                                         contactNo = contactNo,
                                         priorityTag = priorityTag
                                     )
 
-                                    currentBooking.value?.let { viewModel.deleteBookings(it.slotId) }
+                                    currentBooking.value?.let {
+                                        viewModel.deleteBookings(it.slotId)
+                                    }
+
                                     viewModel.addBooking(booking)
                                     viewModel.updateSlotStatus(slotId, SlotStatus.RESERVED)
                                     Toast.makeText(

@@ -81,6 +81,8 @@ dependencies {
     implementation 'com.google.firebase:firebase-auth-ktx'
     implementation "com.google.firebase:firebase-firestore-ktx:25.1.0"
     implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation "com.google.firebase:firebase-messaging:23.4.1"
+
 
     // For Kotlin coroutines .await()
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
@@ -102,4 +104,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
 
     implementation "androidx.datastore:datastore-preferences:1.1.1"
+
+    implementation "androidx.work:work-runtime-ktx:2.9.0"
 }

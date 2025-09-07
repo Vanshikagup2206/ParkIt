@@ -39,7 +39,8 @@ fun UserNavigationGraph(
             UserBookingScreen(authViewModel = authenticationViewModel)
         }
         composable(UserBottomNavItem.Notification.route) {
-            UserNotificationScreen()
+            val userId by authenticationViewModel.customUserId.collectAsState()
+            userId?.let { UserNotificationScreen(userId = it) }
         }
         composable(UserBottomNavItem.Profile.route) {
             val context = LocalContext.current

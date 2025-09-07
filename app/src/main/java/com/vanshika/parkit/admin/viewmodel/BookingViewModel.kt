@@ -6,7 +6,10 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import com.vanshika.parkit.admin.data.model.BookingDetailsDataClass
+import com.vanshika.parkit.admin.data.model.NotificationDataClass
 import com.vanshika.parkit.admin.data.repository.BookingRepository
 import com.vanshika.parkit.admin.screen.home.ParkingSlotData
 import com.vanshika.parkit.admin.screen.home.SlotStatus
@@ -84,6 +87,49 @@ class BookingViewModel @Inject constructor(
         bookingRepository.fetchBookingHistory(customUserId) { updatedBookings ->
             _userBookingHistory.value = updatedBookings
         }
+    }
+
+    fun sendNotificationToUser(notification: NotificationDataClass) {
+        if (notification.userId == null) {
+            sendNotificationToAllUsers(notification)
+        } else {
+            sendNotificationToSingleUser(notification.userId, notification)
+        }
+    }
+
+    // Send to single user
+    private fun sendNotificationToSingleUser(userId: String, notification: NotificationDataClass) {
+        val db = Firebase.firestore
+        db.collection("users")
+            .document(userId)
+            .collection("notifications")
+            .add(notification)
+            .addOnSuccessListener {
+                Log.d("BookingVM", "Notification sent to user $userId")
+            }
+            .addOnFailureListener { e ->
+                Log.e("BookingVM", "Failed to send notification to user $userId", e)
+            }
+    }
+
+    // Broadcast to all users
+    private fun sendNotificationToAllUsers(notification: NotificationDataClass) {
+        val db = Firebase.firestore
+        db.collection("users")
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                for (document in querySnapshot.documents) {
+                    val userId = document.id
+                    db.collection("users")
+                        .document(userId)
+                        .collection("notifications")
+                        .add(notification)
+                }
+                Log.d("BookingVM", "Broadcast notification sent to all users")
+            }
+            .addOnFailureListener { e ->
+                Log.e("BookingVM", "Failed to broadcast notification", e)
+            }
     }
 
     private val _zoneUsage = mutableStateOf<Map<String, Int>>(emptyMap())

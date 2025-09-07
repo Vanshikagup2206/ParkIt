@@ -1,9 +1,13 @@
 package com.vanshika.parkit.admin.screen.home
 
+import android.app.Activity
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
-import android.util.Log
+import android.content.Intent
+import android.speech.RecognizerIntent
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,13 +19,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.google.firebase.Timestamp
+import com.vanshika.parkit.R
 import com.vanshika.parkit.admin.data.model.BookingDetailsDataClass
 import com.vanshika.parkit.admin.viewmodel.BookingViewModel
+import com.vanshika.parkit.ui.theme.ThemePreference
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -64,6 +72,8 @@ fun BookingPage(
 
     val dateFormatter = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
     val timeFormatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
+
+    val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
 
     val allBookings by viewModel.allBookings
 
@@ -108,6 +118,41 @@ fun BookingPage(
     }
     var usernameExpanded by remember { mutableStateOf(false) }
 
+    // ---- Speech-to-Text Setup ----
+    var activeField by remember { mutableStateOf<String?>(null) }
+
+    val speechLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spokenText = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()
+            spokenText?.let {
+                when (activeField) {
+                    "vehicleNo" -> vehicleNo = it
+                    "vehicleType" -> vehicleType = it
+                    "userId" -> userId = it
+                    "username" -> username = it
+                    "contactNo" -> contactNo = it
+                }
+            }
+        }
+    }
+
+    fun startListeningFor(field: String) {
+        activeField = field
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+            )
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...")
+        }
+        speechLauncher.launch(intent)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -123,8 +168,13 @@ fun BookingPage(
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(6.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)
+            elevation = CardDefaults.cardElevation(0.dp), // prevents overlay
+            colors = CardDefaults.cardColors(
+                containerColor = if (isDarkTheme)
+                    Color.Black
+                else
+                    Color.White
+            )
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -146,7 +196,14 @@ fun BookingPage(
                         label = { Text("Vehicle Number") },
                         isError = vehicleNoError.isNotEmpty(),
                         placeholder = { Text("e.g. MH12AB1234") },
-                        trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) },
+                        trailingIcon = {
+                            IconButton(onClick = { startListeningFor("vehicleNo") }) {
+                                Icon(
+                                    painterResource(id = R.drawable.baseline_mic_24),
+                                    contentDescription = "Speak Vehicle Number"
+                                )
+                            }
+                        },
                         singleLine = true,
                         modifier = Modifier
                             .menuAnchor()
@@ -188,6 +245,14 @@ fun BookingPage(
                             Text(text = vehicleTypeError, color = MaterialTheme.colorScheme.error)
                         }
                     },
+                    trailingIcon = {
+                        IconButton(onClick = { startListeningFor("vehicleType") }) {
+                            Icon(
+                                painterResource(id = R.drawable.baseline_mic_24),
+                                contentDescription = "Speak Vehicle Type"
+                            )
+                        }
+                    },
                     singleLine = true,
                     placeholder = { Text("Car, Bike, etc.") },
                     modifier = Modifier.fillMaxWidth()
@@ -207,6 +272,14 @@ fun BookingPage(
                         },
                         label = { Text("User ID") },
                         isError = userIdError.isNotEmpty(),
+                        trailingIcon = {
+                            IconButton(onClick = { startListeningFor("userId") }) {
+                                Icon(
+                                    painterResource(id = R.drawable.baseline_mic_24),
+                                    contentDescription = "Speak User Id"
+                                )
+                            }
+                        },
                         singleLine = true,
                         placeholder = { Text("Enter User ID") },
                         modifier = Modifier
@@ -248,6 +321,14 @@ fun BookingPage(
                         },
                         label = { Text("Username") },
                         isError = usernameError.isNotEmpty(),
+                        trailingIcon = {
+                            IconButton(onClick = { startListeningFor("username") }) {
+                                Icon(
+                                    painterResource(id = R.drawable.baseline_mic_24),
+                                    contentDescription = "Speak Vehicle Username"
+                                )
+                            }
+                        },
                         singleLine = true,
                         placeholder = { Text("Enter Customer Name") },
                         modifier = Modifier
@@ -304,6 +385,14 @@ fun BookingPage(
                     },
                     label = { Text("Contact Number") },
                     isError = contactNoError.isNotEmpty(),
+                    trailingIcon = {
+                        IconButton(onClick = { startListeningFor("contactNo") }) {
+                            Icon(
+                                painterResource(id = R.drawable.baseline_mic_24),
+                                contentDescription = "Speak Contact Number"
+                            )
+                        }
+                    },
                     supportingText = {
                         if (contactNoError.isNotEmpty()) {
                             Text(text = contactNoError, color = MaterialTheme.colorScheme.error)
@@ -334,7 +423,12 @@ fun BookingPage(
                             }
                         },
                         placeholder = { Text("Select Priority") },
-                        trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
+                        trailingIcon = {
+                            Icon(
+                                Icons.Default.ArrowDropDown,
+                                contentDescription = null
+                            )
+                        },
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth()

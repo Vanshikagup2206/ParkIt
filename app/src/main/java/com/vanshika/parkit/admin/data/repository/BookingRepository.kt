@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.vanshika.parkit.admin.data.model.BookingDetailsDataClass
+import com.vanshika.parkit.admin.data.model.NotificationDataClass
 import com.vanshika.parkit.admin.data.model.toFireStoreMap
 import com.vanshika.parkit.admin.screen.home.SlotStatus
 import java.text.SimpleDateFormat
@@ -12,7 +13,9 @@ import java.util.Locale
 import javax.inject.Inject
 
 class BookingRepository @Inject constructor() {
-    private val collection = FirebaseFirestore.getInstance().collection("bookings")
+    private val firestore = FirebaseFirestore.getInstance()
+    private val collection = firestore.collection("bookings")
+    private val notificationsCollection = firestore.collection("notifications")
 
     fun addBookings(booking: BookingDetailsDataClass) {
 //        collection.add(booking.toFireStoreMap())
@@ -22,6 +25,16 @@ class BookingRepository @Inject constructor() {
                     .plus("status" to booking.status.name)
                     .plus("customUserId" to booking.customUserId)
             )
+            .addOnSuccessListener {
+                // Send booking confirmation notification
+                val notification = NotificationDataClass(
+                    title = "Booking Confirmed",
+                    message = "Your booking for slot ${booking.slotId} is confirmed!",
+                    type = "booking_confirmed",
+                    userId = booking.customUserId
+                )
+                notificationsCollection.add(notification)
+            }
     }
 
     fun fetchBookings(onBookingChanged: (List<Triple<String, String, String>>) -> Unit) {
@@ -77,21 +90,49 @@ class BookingRepository @Inject constructor() {
         collection.document(id).update("userName", newUserName)
     }
 
-    fun updateSlotStatus(slotId: String, newStatus: SlotStatus) {
+    fun updateSlotStatus(slotId: String, newStatus: SlotStatus, userId: String? = null) {
         val docRef = collection.document(slotId)
         docRef.get().addOnSuccessListener { snapshot ->
             if (snapshot.exists()) {
-                // Agar document already hai to update kar do
                 docRef.update("status", newStatus.name)
             } else {
-                // Agar document does not exist hai to ek minimal record create kar do
-                val slotData = mapOf(
-                    "slotId" to slotId,
-                    "status" to newStatus.name
+                docRef.set(mapOf("slotId" to slotId, "status" to newStatus.name))
+            }
+
+            // Notifications handled here
+            when (newStatus) {
+                SlotStatus.AVAILABLE -> userId?.let {
+                    sendNotification(
+                        title = "Booking Auto-Cancelled",
+                        message = "Your booking for slot $slotId expired and was cancelled.",
+                        type = "booking_cancelled",
+                        userId = it
+                    )
+                }
+
+                SlotStatus.MAINTENANCE -> sendNotification(
+                    title = "Slot Under Maintenance",
+                    message = "Slot $slotId is under maintenance. Sorry for inconvenience.",
+                    type = "maintenance",
+                    userId = null
                 )
-                docRef.set(slotData)
+
+                SlotStatus.BOOKED -> userId?.let {
+                    sendNotification(
+                        title = "Booking Confirmed",
+                        message = "Your booking for slot $slotId is confirmed.",
+                        type = "booking_confirmed",
+                        userId = it
+                    )
+                }
+
+                else -> {}
             }
         }
+    }
+
+    fun sendMaintenanceNotice(title: String, message: String) {
+        sendNotification(title, message, type = "maintenance", userId = null)
     }
 
     fun deleteBookings(id: String) {
@@ -218,4 +259,20 @@ class BookingRepository @Inject constructor() {
             onResult(userCounts?.key)
         }
     }
+
+    private fun sendNotification(
+        title: String,
+        message: String,
+        type: String,
+        userId: String?
+    ) {
+        val notification = NotificationDataClass(
+                title = title,
+                message = message,
+                type = type,
+                userId = userId
+            )
+        notificationsCollection.add(notification)
+    }
+
 }

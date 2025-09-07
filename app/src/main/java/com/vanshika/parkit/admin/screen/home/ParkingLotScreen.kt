@@ -4,11 +4,30 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -142,7 +161,7 @@ fun ParkingLotLayout(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(450.dp)
-                        .background(Color(0xFFC8E6C9) ),
+                        .background(Color(0xFFC8E6C9)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -236,15 +255,39 @@ fun ParkingSlot(
 
     if (showDialog) {
         when (slotData.status.value) {
-            SlotStatus.AVAILABLE -> AvailableSlotDialog(slotData, onStatusChange, navController, viewModel) { showDialog = false }
-            SlotStatus.BOOKED -> BookedSlotDialog(slotData, onStatusChange, navController, viewModel) { showDialog = false }
-            SlotStatus.RESERVED -> ReservedSlotDialog(slotData, onStatusChange, navController, viewModel) { showDialog = false }
-            SlotStatus.MAINTENANCE -> MaintenanceSlotDialog(slotData, onStatusChange, navController, viewModel) { showDialog = false }
+            SlotStatus.AVAILABLE -> AvailableSlotDialog(
+                slotData,
+                onStatusChange,
+                navController,
+                viewModel
+            ) { showDialog = false }
+
+            SlotStatus.BOOKED -> BookedSlotDialog(
+                slotData,
+                onStatusChange,
+                navController,
+                viewModel
+            ) { showDialog = false }
+
+            SlotStatus.RESERVED -> ReservedSlotDialog(
+                slotData,
+                onStatusChange,
+                navController,
+                viewModel
+            ) { showDialog = false }
+
+            SlotStatus.MAINTENANCE -> MaintenanceSlotDialog(
+                slotData,
+                onStatusChange,
+                navController,
+                viewModel
+            ) { showDialog = false }
         }
     }
 }
 
-@Composable fun HorizontalPillar() {
+@Composable
+fun HorizontalPillar() {
     Row {
         Box(
             modifier = Modifier
@@ -279,7 +322,13 @@ fun AvailableSlotDialog(
                 TextButton(onClick = {
                     onStatusChange(SlotStatus.BOOKED)
                     viewModel.updateSlotStatus(slotData.id, SlotStatus.BOOKED)
-                    navController.navigate(NavRoutes.BookingPage.createRoute(slotData.id, slotData.zoneName, SlotStatus.BOOKED))
+                    navController.navigate(
+                        NavRoutes.BookingPage.createRoute(
+                            slotData.id,
+                            slotData.zoneName,
+                            SlotStatus.BOOKED
+                        )
+                    )
                     onDismiss()
                 }) { Text("Make Booking") }
 
@@ -293,7 +342,13 @@ fun AvailableSlotDialog(
                 TextButton(onClick = {
                     onStatusChange(SlotStatus.RESERVED)
                     viewModel.updateSlotStatus(slotData.id, SlotStatus.RESERVED)
-                    navController.navigate(NavRoutes.ReserveBookingPage.createRoute(slotData.id, slotData.zoneName, SlotStatus.RESERVED))
+                    navController.navigate(
+                        NavRoutes.ReserveBookingPage.createRoute(
+                            slotData.id,
+                            slotData.zoneName,
+                            SlotStatus.RESERVED
+                        )
+                    )
                     onDismiss()
                 }) { Text("Reserve Slot") }
             }
@@ -326,7 +381,13 @@ fun BookedSlotDialog(
                 TextButton(onClick = {
                     onStatusChange(SlotStatus.RESERVED)
                     viewModel.updateSlotStatus(slotData.id, SlotStatus.RESERVED)
-                    navController.navigate(NavRoutes.ReserveBookingPage.createRoute(slotData.id, slotData.zoneName, SlotStatus.RESERVED))
+                    navController.navigate(
+                        NavRoutes.ReserveBookingPage.createRoute(
+                            slotData.id,
+                            slotData.zoneName,
+                            SlotStatus.RESERVED
+                        )
+                    )
                     onDismiss()
                 }) { Text("Mark as Reserved") }
 
@@ -373,7 +434,13 @@ fun ReservedSlotDialog(
                 TextButton(onClick = {
                     onStatusChange(SlotStatus.BOOKED)
                     viewModel.updateSlotStatus(slotData.id, SlotStatus.BOOKED)
-                    navController.navigate(NavRoutes.BookingPage.createRoute(slotData.id, slotData.zoneName, SlotStatus.BOOKED))
+                    navController.navigate(
+                        NavRoutes.BookingPage.createRoute(
+                            slotData.id,
+                            slotData.zoneName,
+                            SlotStatus.BOOKED
+                        )
+                    )
                     onDismiss()
                 }) { Text("Make Booking") }
             }
@@ -406,14 +473,26 @@ fun MaintenanceSlotDialog(
                 TextButton(onClick = {
                     onStatusChange(SlotStatus.RESERVED)
                     viewModel.updateSlotStatus(slotData.id, SlotStatus.RESERVED)
-                    navController.navigate(NavRoutes.ReserveBookingPage.createRoute(slotData.id, slotData.zoneName, SlotStatus.RESERVED))
+                    navController.navigate(
+                        NavRoutes.ReserveBookingPage.createRoute(
+                            slotData.id,
+                            slotData.zoneName,
+                            SlotStatus.RESERVED
+                        )
+                    )
                     onDismiss()
                 }) { Text("Mark Reserved") }
 
                 TextButton(onClick = {
                     onStatusChange(SlotStatus.BOOKED)
                     viewModel.updateSlotStatus(slotData.id, SlotStatus.BOOKED)
-                    navController.navigate(NavRoutes.BookingPage.createRoute(slotData.id, slotData.zoneName, SlotStatus.BOOKED))
+                    navController.navigate(
+                        NavRoutes.BookingPage.createRoute(
+                            slotData.id,
+                            slotData.zoneName,
+                            SlotStatus.BOOKED
+                        )
+                    )
                     onDismiss()
                 }) { Text("Make Booking") }
             }
