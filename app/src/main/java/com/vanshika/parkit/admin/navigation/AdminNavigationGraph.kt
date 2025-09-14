@@ -1,5 +1,6 @@
 package com.vanshika.parkit.admin.navigation
 
+import ZoneUsageDetailsScreen
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -13,10 +14,13 @@ import androidx.navigation.navArgument
 import com.vanshika.parkit.MainNavRoutes
 import com.vanshika.parkit.admin.data.repository.BookingRepository
 import com.vanshika.parkit.admin.screen.analytics.AdminAnalyticsScreen
+import com.vanshika.parkit.admin.screen.analytics.components.DailyUsageDetailsScreen
+import com.vanshika.parkit.admin.screen.analytics.components.HeatmapDetailsScreen
 import com.vanshika.parkit.admin.screen.home.AdminHomeScreen
 import com.vanshika.parkit.admin.screen.home.BookingPage
 import com.vanshika.parkit.admin.screen.home.ReserveBookingPage
 import com.vanshika.parkit.admin.screen.home.SlotStatus
+import com.vanshika.parkit.admin.screen.home.UpdateBookings
 import com.vanshika.parkit.admin.screen.issues.AdminIssuesScreen
 import com.vanshika.parkit.admin.screen.issues.IssueDetail
 import com.vanshika.parkit.admin.screen.profile.AdminProfileScreen
@@ -48,7 +52,7 @@ fun AdminNavigationGraph(
             )
         }
         composable(AdminBottomNavItem.Analytics.route) {
-            AdminAnalyticsScreen()
+            AdminAnalyticsScreen(navController = navHostController)
         }
         composable(AdminBottomNavItem.Profile.route) {
             val context = LocalContext.current
@@ -58,16 +62,16 @@ fun AdminNavigationGraph(
             AdminProfileScreen(
                 onLogout = {
                     authenticationViewModel.logout()
-                    rootNavController.navigate(MainNavRoutes.SplashScreen.route){
-                        popUpTo(0){
+                    rootNavController.navigate(MainNavRoutes.SplashScreen.route) {
+                        popUpTo(0) {
                             inclusive = true
                         }
                         launchSingleTop = true
                     }
                 },
                 isDarkTheme = isDarkTheme,
-                onThemeChange = {theme ->
-                    scope.launch{
+                onThemeChange = { theme ->
+                    scope.launch {
                         ThemePreference.saveTheme(context, theme)
                     }
                 }
@@ -86,7 +90,6 @@ fun AdminNavigationGraph(
                 slotId = slotId,
                 zoneName = zoneName,
                 originalStatus = originalStatus,
-                viewModel = BookingViewModel(BookingRepository()),
                 onNavigateUp = { navHostController.navigateUp() }
             )
         }
@@ -101,7 +104,19 @@ fun AdminNavigationGraph(
                 slotId = slotId,
                 zoneName = zoneName,
                 originalStatus = originalStatus,
-                viewModel = BookingViewModel(BookingRepository()),
+                onNavigateUp = { navHostController.navigateUp() }
+            )
+        }
+        composable(NavRoutes.UpdateBookings.route) { backStackEntry ->
+            val slotId = backStackEntry.arguments?.getString("slotId") ?: ""
+            val zoneName = backStackEntry.arguments?.getString("zoneName") ?: ""
+            val statusName = backStackEntry.arguments?.getString("status") ?: SlotStatus.AVAILABLE.name
+            val originalStatus = SlotStatus.valueOf(statusName)
+
+            UpdateBookings(
+                slotId = slotId,
+                zoneName = zoneName,
+                originalStatus = originalStatus,
                 onNavigateUp = { navHostController.navigateUp() }
             )
         }
@@ -114,6 +129,17 @@ fun AdminNavigationGraph(
                 issueId = issueId,
                 onBack = { navHostController.navigateUp() }
             )
+        }
+        composable(NavRoutes.DailyUsageDetail.route) {
+            DailyUsageDetailsScreen()
+        }
+
+        composable(NavRoutes.HeatmapDetail.route) {
+            HeatmapDetailsScreen()
+        }
+
+        composable(NavRoutes.ZoneUsageDetail.route) {
+            ZoneUsageDetailsScreen()
         }
     }
 }

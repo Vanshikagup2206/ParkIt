@@ -9,8 +9,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vanshika.parkit.ui.theme.ThemePreference
 import com.vanshika.parkit.user.data.model.IssuesDataClass
 import com.vanshika.parkit.user.viewmodel.IssuesViewModel
 import kotlinx.coroutines.launch
@@ -34,17 +37,24 @@ fun ReportScreen(
         "Improper marking of slot",
         "Obstruction blocking entry",
         "Security / CCTV issue",
-        "Cleanliness issue",
-        "Other"
+        "Cleanliness issue"
     )
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
     var customIssue by remember { mutableStateOf("") }
-
-    // 👇 track selected issue
     var selectedIssue by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current
+
+    val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
+
+    val cardColor = if (isDarkTheme) {
+        Color(0xFF1565C0) // darker blue for dark theme
+    } else {
+        Color(0xFFD0E8FF) // light blue for light theme
+    }
 
     Scaffold(
         topBar = {
@@ -61,20 +71,15 @@ fun ReportScreen(
             if (selectedIssue != null) {
                 Button(
                     onClick = {
-                        if (selectedIssue == "Other") {
-                            showBottomSheet = true
-                            coroutineScope.launch { sheetState.show() }
-                        } else {
-                            val newIssue = IssuesDataClass(
-                                issueId = UUID.randomUUID().toString(),
-                                slotId = slotId,
-                                zoneName = zoneName,
-                                issueType = selectedIssue!!,
-                                reportedBy = userId
-                            )
-                            viewModel.addIssue(newIssue)
-                            onNavigationUp()
-                        }
+                        val newIssue = IssuesDataClass(
+                            issueId = UUID.randomUUID().toString(),
+                            slotId = slotId,
+                            zoneName = zoneName,
+                            issueType = selectedIssue!!,
+                            reportedBy = userId
+                        )
+                        viewModel.addIssue(newIssue)
+                        onNavigationUp()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -90,12 +95,12 @@ fun ReportScreen(
                 .padding(padding)
                 .padding(16.dp)
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.Top
+                .verticalScroll(rememberScrollState())
         ) {
             Text("Select the issue you faced:", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Main issues with a checkbox
             issues.forEach { issue ->
                 Card(
                     modifier = Modifier
@@ -103,7 +108,7 @@ fun ReportScreen(
                         .padding(vertical = 6.dp)
                         .clickable { selectedIssue = issue },
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        containerColor = cardColor
                     )
                 ) {
                     Row(
@@ -112,22 +117,42 @@ fun ReportScreen(
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = issue,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-
+                        Text(text = issue, style = MaterialTheme.typography.bodyLarge)
                         Checkbox(
                             checked = selectedIssue == issue,
-                            onCheckedChange = { selectedIssue = issue }
+                            onCheckedChange = { checked ->
+                                selectedIssue = if (checked) issue else null
+                            }
                         )
                     }
+                }
+            }
+
+            // "Other" issue without a checkbox
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .clickable {
+                        showBottomSheet = true
+                        coroutineScope.launch { sheetState.show() }
+                    },
+                colors = CardDefaults.cardColors(
+                    containerColor = cardColor
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "Other", style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }
     }
 
-    // ---------------- Bottom Sheet ----------------
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet = false },
@@ -162,8 +187,9 @@ fun ReportScreen(
                                 reportedBy = userId
                             )
                             viewModel.addIssue(newIssue)
-                            showBottomSheet = false
+                            customIssue = ""
                             coroutineScope.launch { sheetState.hide() }
+                            showBottomSheet = false
                             onNavigationUp()
                         }
                     },

@@ -1,13 +1,27 @@
 package com.vanshika.parkit.admin.screen.analytics.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -24,7 +38,8 @@ import kotlin.math.roundToInt
 @Composable
 fun DailyUsageLineChart(
     viewModel: BookingViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
 ) {
     val usage by viewModel.dailyUsage
     val days = usage.keys.toList()
@@ -38,7 +53,9 @@ fun DailyUsageLineChart(
     val textColor = MaterialTheme.colorScheme.onBackground // 🔹 Auto black/white
 
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -54,7 +71,9 @@ fun DailyUsageLineChart(
                 ) {
                     // Y-axis labels
                     Column(
-                        modifier = Modifier.width(32.dp).fillMaxHeight(),
+                        modifier = Modifier
+                            .width(32.dp)
+                            .fillMaxHeight(),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
                         val step = (maxY / 4).coerceAtLeast(1f)
@@ -80,11 +99,9 @@ fun DailyUsageLineChart(
                         Canvas(Modifier.matchParentSize()) {
                             val xStep = size.width / (days.size - 1).coerceAtLeast(1)
                             val yRatio = size.height / maxY
-                            val step = (maxY / 4).coerceAtLeast(1f)
 
-                            // Grid lines
                             for (i in 0..4) {
-                                val y = size.height - (i * step * yRatio)
+                                val y = size.height - (i * size.height / 4f) // evenly divide height
                                 drawLine(
                                     color = gridColor,
                                     start = Offset(0f, y),
@@ -93,7 +110,6 @@ fun DailyUsageLineChart(
                                 )
                             }
 
-                            // Line Path
                             val path = Path()
                             values.forEachIndexed { index, value ->
                                 val x = index * xStep
@@ -102,12 +118,10 @@ fun DailyUsageLineChart(
                             }
                             drawPath(path, color = lineColor, style = Stroke(width = 4f))
 
-                            // Dots
                             values.forEachIndexed { index, value ->
                                 val x = index * xStep
                                 val y = size.height - (value * yRatio)
 
-                                // Circle size → bigger if selected
                                 val radius = if (selectedIndex == index) 10f else 6f
 
                                 drawCircle(
@@ -116,7 +130,6 @@ fun DailyUsageLineChart(
                                     center = Offset(x, y)
                                 )
 
-                                // Show value when selected
                                 if (selectedIndex == index) {
                                     drawContext.canvas.nativeCanvas.drawText(
                                         value.toString(),
@@ -124,7 +137,7 @@ fun DailyUsageLineChart(
                                         y - 20,
                                         android.graphics.Paint().apply {
                                             textSize = 36f
-                                            color = textColor.toArgb() // 🔹 black/white auto
+                                            color = textColor.toArgb()
                                             textAlign = android.graphics.Paint.Align.CENTER
                                         }
                                     )
@@ -139,7 +152,9 @@ fun DailyUsageLineChart(
                 // X-axis labels
                 Row(
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth().padding(start = 32.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 32.dp)
                 ) {
                     days.forEach { day -> Text(day, fontSize = 12.sp) }
                 }

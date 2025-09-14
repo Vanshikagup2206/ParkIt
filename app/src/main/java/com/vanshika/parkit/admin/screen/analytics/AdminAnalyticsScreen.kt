@@ -8,6 +8,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
+import com.vanshika.parkit.admin.navigation.NavRoutes
 import com.vanshika.parkit.admin.screen.analytics.components.DailyUsageLineChart
 import com.vanshika.parkit.admin.screen.analytics.components.TopParkedZonesCard
 import com.vanshika.parkit.admin.screen.analytics.components.UsageHeatmap
@@ -17,6 +19,7 @@ import com.vanshika.parkit.admin.viewmodel.BookingViewModel
 
 @Composable
 fun AdminAnalyticsScreen(
+    navController: NavHostController,
     bookingViewModel: BookingViewModel = hiltViewModel()
 ) {
     // Load data once when screen opens
@@ -38,19 +41,22 @@ fun AdminAnalyticsScreen(
         // 🔹 Pie chart full width
         ZoneUsagePieChart(
             viewModel = bookingViewModel,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { navController.navigate(NavRoutes.ZoneUsageDetail.route) }
         )
 
         // 🔹 Heatmap full width
         UsageHeatmap(
             viewModel = bookingViewModel,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { navController.navigate(NavRoutes.HeatmapDetail.route) }
         )
 
         // 🔹 Daily usage full width
         DailyUsageLineChart(
             viewModel = bookingViewModel,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { navController.navigate(NavRoutes.DailyUsageDetail.route) }
         )
 
         // 🔹 Last row with 2 cards side by side

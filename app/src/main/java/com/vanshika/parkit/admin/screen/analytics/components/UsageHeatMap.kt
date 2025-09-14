@@ -1,6 +1,7 @@
 package com.vanshika.parkit.admin.screen.analytics.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,7 +28,8 @@ import com.vanshika.parkit.admin.viewmodel.BookingViewModel
 @Composable
 fun UsageHeatmap(
     viewModel: BookingViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
 ) {
     val heatmap by viewModel.heatmapData
 
@@ -36,7 +38,9 @@ fun UsageHeatmap(
     val maxUsage = (heatmap.values.maxOrNull() ?: 1).toFloat()
 
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {

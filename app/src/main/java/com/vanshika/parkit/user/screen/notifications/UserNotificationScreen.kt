@@ -21,9 +21,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vanshika.parkit.admin.data.model.NotificationDataClass
+import com.vanshika.parkit.ui.theme.ThemePreference
 import com.vanshika.parkit.user.viewmodel.UserNotificationViewModel
 
 @Composable
@@ -65,12 +67,23 @@ fun NotificationCard(
             MaterialTheme.colorScheme.surface
         else
             MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+
+    val context = LocalContext.current
+
+    val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
+
+    val cardColor = if (isDarkTheme) {
+        Color(0xFF1565C0) // darker blue for dark theme
+    } else {
+        Color(0xFFD0E8FF) // light blue for light theme
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFD0E8FF))
+        colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(

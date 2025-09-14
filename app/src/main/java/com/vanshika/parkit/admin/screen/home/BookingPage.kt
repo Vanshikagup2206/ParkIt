@@ -8,9 +8,8 @@ import android.speech.RecognizerIntent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -25,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.firebase.Timestamp
 import com.vanshika.parkit.R
 import com.vanshika.parkit.admin.data.model.BookingDetailsDataClass
@@ -39,12 +39,11 @@ fun BookingPage(
     slotId: String = "",
     zoneName: String = "",
     originalStatus: SlotStatus,
-    viewModel: BookingViewModel,
+    viewModel: BookingViewModel = hiltViewModel(),
     onNavigateUp: () -> Unit
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
-    val previousStatus = remember { originalStatus }
 
     var vehicleNo by remember { mutableStateOf("") }
     var vehicleType by remember { mutableStateOf("") }
@@ -76,19 +75,12 @@ fun BookingPage(
     val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
 
     val allBookings by viewModel.allBookings
+    val currentBooking = remember { mutableStateOf<BookingDetailsDataClass?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.loadAllBookings()
     }
 
-    // Keep track of the current booking for this slot (if any)
-    val currentBooking = remember { mutableStateOf<BookingDetailsDataClass?>(null) }
-
-    LaunchedEffect(allBookings) {
-        currentBooking.value = allBookings.find { it.slotId == slotId }
-    }
-
-    // Vehicle Number suggestions from bookings
     val vehicleNoSuggestions by remember(vehicleNo, allBookings) {
         derivedStateOf {
             if (vehicleNo.isBlank()) emptyList()
@@ -118,9 +110,8 @@ fun BookingPage(
     }
     var usernameExpanded by remember { mutableStateOf(false) }
 
-    // ---- Speech-to-Text Setup ----
+    // Speech-to-Text Setup
     var activeField by remember { mutableStateOf<String?>(null) }
-
     val speechLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -168,12 +159,9 @@ fun BookingPage(
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(0.dp), // prevents overlay
+            elevation = CardDefaults.cardElevation(0.dp),
             colors = CardDefaults.cardColors(
-                containerColor = if (isDarkTheme)
-                    Color.Black
-                else
-                    Color.White
+                containerColor = if (isDarkTheme) Color.Black else Color.White
             )
         ) {
             Column(
@@ -211,11 +199,19 @@ fun BookingPage(
                     )
                     ExposedDropdownMenu(
                         expanded = vehicleNoExpanded && vehicleNoSuggestions.isNotEmpty(),
-                        onDismissRequest = { vehicleNoExpanded = false }
+                        onDismissRequest = { vehicleNoExpanded = false },
+                        modifier = Modifier.background(
+                            color = if (isDarkTheme) Color.Black else Color.White
+                        )
                     ) {
                         vehicleNoSuggestions.forEach { suggestion ->
                             DropdownMenuItem(
-                                text = { Text(suggestion) },
+                                text = {
+                                    Text(
+                                        text = suggestion,
+                                        color = if (isDarkTheme) Color.White else Color.Black
+                                    )
+                                },
                                 onClick = {
                                     vehicleNo = suggestion
                                     val user = allBookings.find { it.vehicleNumber == suggestion }
@@ -240,11 +236,6 @@ fun BookingPage(
                     },
                     label = { Text("Vehicle Type") },
                     isError = vehicleTypeError.isNotEmpty(),
-                    supportingText = {
-                        if (vehicleTypeError.isNotEmpty()) {
-                            Text(text = vehicleTypeError, color = MaterialTheme.colorScheme.error)
-                        }
-                    },
                     trailingIcon = {
                         IconButton(onClick = { startListeningFor("vehicleType") }) {
                             Icon(
@@ -258,7 +249,7 @@ fun BookingPage(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                /*** User ID with suggestions ***/
+                // User ID
                 ExposedDropdownMenuBox(
                     expanded = userIdExpanded && userIdSuggestions.isNotEmpty(),
                     onExpandedChange = { userIdExpanded = !userIdExpanded }
@@ -288,11 +279,19 @@ fun BookingPage(
                     )
                     ExposedDropdownMenu(
                         expanded = userIdExpanded && userIdSuggestions.isNotEmpty(),
-                        onDismissRequest = { userIdExpanded = false }
+                        onDismissRequest = { userIdExpanded = false },
+                        modifier = Modifier.background(
+                            color = if (isDarkTheme) Color.Black else Color.White
+                        )
                     ) {
                         userIdSuggestions.forEach { user ->
                             DropdownMenuItem(
-                                text = { Text("${user.customUserId} - ${user.userName}") },
+                                text = {
+                                    Text(
+                                        text = "${user.customUserId} - ${user.userName}",
+                                        color = if (isDarkTheme) Color.White else Color.Black
+                                    )
+                                },
                                 onClick = {
                                     userId = user.customUserId
                                     username = user.userName
@@ -307,7 +306,7 @@ fun BookingPage(
                     }
                 }
 
-                /*** Username with suggestions ***/
+                // Username
                 ExposedDropdownMenuBox(
                     expanded = usernameExpanded && usernameSuggestions.isNotEmpty(),
                     onExpandedChange = { usernameExpanded = !usernameExpanded }
@@ -325,7 +324,7 @@ fun BookingPage(
                             IconButton(onClick = { startListeningFor("username") }) {
                                 Icon(
                                     painterResource(id = R.drawable.baseline_mic_24),
-                                    contentDescription = "Speak Vehicle Username"
+                                    contentDescription = "Speak Username"
                                 )
                             }
                         },
@@ -337,11 +336,19 @@ fun BookingPage(
                     )
                     ExposedDropdownMenu(
                         expanded = usernameExpanded && usernameSuggestions.isNotEmpty(),
-                        onDismissRequest = { usernameExpanded = false }
+                        onDismissRequest = { usernameExpanded = false },
+                        modifier = Modifier.background(
+                            color = if (isDarkTheme) Color.Black else Color.White
+                        )
                     ) {
                         usernameSuggestions.forEach { user ->
                             DropdownMenuItem(
-                                text = { Text("${user.userName} - ${user.customUserId}") },
+                                text = {
+                                    Text(
+                                        text = "${user.userName} - ${user.customUserId}",
+                                        color = if (isDarkTheme) Color.White else Color.Black
+                                    )
+                                },
                                 onClick = {
                                     username = user.userName
                                     userId = user.customUserId
@@ -403,7 +410,7 @@ fun BookingPage(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // Priority Tag Dropdown
+                // Priority Tag
                 ExposedDropdownMenuBox(
                     expanded = priorityExpanded,
                     onExpandedChange = { priorityExpanded = !priorityExpanded }
@@ -424,10 +431,7 @@ fun BookingPage(
                         },
                         placeholder = { Text("Select Priority") },
                         trailingIcon = {
-                            Icon(
-                                Icons.Default.ArrowDropDown,
-                                contentDescription = null
-                            )
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                         },
                         modifier = Modifier
                             .menuAnchor()
@@ -435,11 +439,19 @@ fun BookingPage(
                     )
                     ExposedDropdownMenu(
                         expanded = priorityExpanded,
-                        onDismissRequest = { priorityExpanded = false }
+                        onDismissRequest = { priorityExpanded = false },
+                        modifier = Modifier.background(
+                            color = if (isDarkTheme) Color.Black else Color.White
+                        )
                     ) {
                         priorityOptions.forEach { option ->
                             DropdownMenuItem(
-                                text = { Text(option) },
+                                text = {
+                                    Text(
+                                        text = option,
+                                        color = if (isDarkTheme) Color.White else Color.Black
+                                    )
+                                },
                                 onClick = {
                                     priorityTag = option
                                     priorityExpanded = false
@@ -486,7 +498,7 @@ fun BookingPage(
                     )
                 }
 
-                // Time pickers row
+                // Time pickers
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -560,9 +572,7 @@ fun BookingPage(
                             currentBooking.value?.let {
                                 viewModel.deleteBookings(it.slotId)
                             }
-
                             viewModel.updateSlotStatus(slotId, SlotStatus.AVAILABLE)
-
                             vehicleNo = ""
                             vehicleType = ""
                             userId = ""
@@ -572,7 +582,6 @@ fun BookingPage(
                             datePicked = ""
                             startTimePicked = ""
                             endTimePicked = ""
-
                             Toast.makeText(context, "Booking Cancelled", Toast.LENGTH_SHORT).show()
                             onNavigateUp()
                         },
@@ -620,12 +629,10 @@ fun BookingPage(
                                         priorityTag = priorityTag
                                     )
 
-                                    currentBooking.value?.let {
-                                        viewModel.deleteBookings(it.slotId)
-                                    }
-
                                     viewModel.addBooking(booking)
+                                    viewModel.addBookingHistory(booking)
                                     viewModel.updateSlotStatus(slotId, SlotStatus.BOOKED)
+
                                     Toast.makeText(
                                         context,
                                         "Booking confirmed!",
@@ -638,19 +645,6 @@ fun BookingPage(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text("Confirm Booking")
-                    }
-                }
-                Spacer(Modifier.height(24.dp))
-
-                Text("DEBUG: All Bookings", style = MaterialTheme.typography.titleMedium)
-
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                ) {
-                    items(allBookings) { booking ->
-                        Text("${booking.vehicleNumber} - ${booking.userName} - ${booking.customUserId}")
                     }
                 }
             }

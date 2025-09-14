@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -67,6 +68,7 @@ fun AdminProfileScreen(
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
+    var showProfileDialog by remember { mutableStateOf(false) }
 
     val authUser by authViewModel.user.collectAsStateWithLifecycle()
     val userProfile by profileViewModel.user.collectAsStateWithLifecycle()
@@ -107,20 +109,22 @@ fun AdminProfileScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(contentAlignment = Alignment.Center) {
+                    val profileImageModifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .clickable { showProfileDialog = true }
+
                     userProfile?.profilePicUrl?.let {
                         Image(
                             painter = rememberAsyncImagePainter(model = it),
                             contentDescription = "Profile Picture",
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(CircleShape)
+                            modifier = profileImageModifier,
+                            contentScale = ContentScale.Crop
                         )
                     } ?: Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = "Profile Picture",
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(CircleShape),
+                        modifier = profileImageModifier,
                         tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                     )
                 }
@@ -364,6 +368,33 @@ fun AdminProfileScreen(
             }
         )
     }
+
+    if (showProfileDialog) {
+        AlertDialog(
+            onDismissRequest = { showProfileDialog = false },
+            text = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = rememberAsyncImagePainter(model = userProfile?.profilePicUrl),
+                        contentDescription = "Profile Preview",
+                        modifier = Modifier
+                            .size(250.dp)
+                            .clip(CircleShape)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showProfileDialog = false }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -373,6 +404,7 @@ fun ProfileOption(text: String, onClick: () -> Unit) {
             .fillMaxWidth()
             .padding(vertical = 6.dp),
         onClick = onClick,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
@@ -402,6 +434,7 @@ fun ThemeOption(text: String, isChecked: Boolean, onCheckedChange: (Boolean) -> 
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(

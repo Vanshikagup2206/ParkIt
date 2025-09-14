@@ -7,7 +7,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -28,19 +27,11 @@ fun DirectionScreen(
     onNavigateUp: () -> Unit,
     viewModel: BookingViewModel = hiltViewModel()
 ) {
-    val slotCoordinates = viewModel.slotPositions[slotId] ?: Offset.Zero
+    val rawSlotCoordinates = viewModel.slotPositions[slotId] ?: Offset.Zero
 
-    // Middle lane fixed X (same as UserParkingLot middle path)
+    // Middle lane fixed X
     val middleX = 200f
     val entrance = Offset(middleX, 0f)
-
-    val pathPoints = remember(slotCoordinates) {
-        generatePath(entrance, slotCoordinates, middleX)
-    }
-
-    val instructions = remember(pathPoints) {
-        generateInstructions(pathPoints)
-    }
 
     Column(
         modifier = Modifier
@@ -56,11 +47,10 @@ fun DirectionScreen(
             }
         )
 
-        // Show only sliced section of parking
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(400.dp) // small view, not full scroll
+                .height(400.dp)
         ) {
             UserParkingLotSection(
                 zoneName = zoneName,
@@ -68,8 +58,12 @@ fun DirectionScreen(
                 slotsMap = viewModel.slotsMap
             )
 
-            // Overlay path
             Canvas(modifier = Modifier.fillMaxSize()) {
+
+                // Generate path
+                val pathPoints = generatePath(entrance, rawSlotCoordinates, size.width / 2f)
+
+                // Dotted Line
                 for (i in 0 until pathPoints.size - 1) {
                     drawLine(
                         color = Color.Blue,
@@ -80,14 +74,18 @@ fun DirectionScreen(
                     )
                 }
 
-                // Draw arrow at destination
-                if (slotCoordinates != Offset.Zero) {
+                // Arrow at destination
+                if (rawSlotCoordinates != Offset.Zero) {
                     val arrowSize = 20f
-                    val p1 = Offset(slotCoordinates.x, slotCoordinates.y - arrowSize)
+                    val p1 = Offset(rawSlotCoordinates.x, rawSlotCoordinates.y - arrowSize)
                     val p2 =
-                        Offset(slotCoordinates.x - arrowSize / 2, slotCoordinates.y + arrowSize / 2)
+                        Offset(
+                            rawSlotCoordinates.x - arrowSize / 2,
+                            rawSlotCoordinates.y + arrowSize / 2)
                     val p3 =
-                        Offset(slotCoordinates.x + arrowSize / 2, slotCoordinates.y + arrowSize / 2)
+                        Offset(
+                            rawSlotCoordinates.x + arrowSize / 2,
+                            rawSlotCoordinates.y + arrowSize / 2)
 
                     drawLine(Color.Blue, p1, p2, strokeWidth = 6f)
                     drawLine(Color.Blue, p1, p3, strokeWidth = 6f)
@@ -106,6 +104,15 @@ fun DirectionScreen(
             Text("Slot $slotId", style = MaterialTheme.typography.headlineSmall)
             Text("Zone $zoneName", style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Generate text instructions
+            val scaledSlotCoordinates = Offset(
+                rawSlotCoordinates.x, rawSlotCoordinates.y
+            )
+            val instructions = generateInstructions(
+                generatePath(entrance, scaledSlotCoordinates, middleX)
+            )
+
             Text(
                 text = "Instruction: $instructions",
                 style = MaterialTheme.typography.bodyLarge,
@@ -170,31 +177,66 @@ fun UserParkingLotSection(
     }
 }
 
-/** * Generate path: entrance → middle lane → slot */
+///** * Generate path: entrance → middle lane → slot */
+//fun generatePath(entry: Offset, slot: Offset, middleX: Float): List<Offset> {
+//    val path = mutableListOf<Offset>()
+//    path.add(entry)
+//    if (slot != Offset.Zero) {
+//        // Step 1: go down central lane until slot’s Y
+//        path.add(Offset(middleX, slot.y))
+//        // Step 2: turn left/right into slot
+//        path.add(slot)
+//    }
+//    return path
+//}
+
+/** Generate path: entrance → middle lane → zone row → slot */
 fun generatePath(entry: Offset, slot: Offset, middleX: Float): List<Offset> {
     val path = mutableListOf<Offset>()
     path.add(entry)
+
     if (slot != Offset.Zero) {
-        // Step 1: go down central lane until slot’s Y
-        path.add(Offset(middleX, slot.y))
-        // Step 2: turn left/right into slot
+        // Step 1: go straight down middle lane until aligned with slot’s row (y position)
+        val middleAtSlotY = Offset(middleX, slot.y)
+        path.add(middleAtSlotY)
+
+        // Step 2: turn left/right from middle lane into slot
         path.add(slot)
     }
+
     return path
 }
 
-/** * Generate textual driving instructions */
+///** * Generate textual driving instructions */
+//fun generateInstructions(path: List<Offset>): String {
+//    val instructions = mutableListOf<String>()
+//    if (path.size > 1 && path[1].y > path[0].y) {
+//        instructions.add("Go straight down the middle lane.")
+//    }
+//    if (path.size > 2) {
+//        val dx = path[2].x - path[1].x
+//        when {
+//            dx > 0 -> instructions.add("Turn right towards your slot.")
+//            dx < 0 -> instructions.add("Turn left towards your slot.")
+//        }
+//    }
+//    return instructions.joinToString(" ")
+//}
+/** Generate textual driving instructions */
 fun generateInstructions(path: List<Offset>): String {
     val instructions = mutableListOf<String>()
-    if (path.size > 1 && path[1].y > path[0].y) {
-        instructions.add("Go straight down the middle lane.")
+
+    if (path.size > 1) {
+        instructions.add("Go straight down the middle lane until Zone area.")
     }
     if (path.size > 2) {
         val dx = path[2].x - path[1].x
         when {
-            dx > 0 -> instructions.add("Turn right towards your slot.")
-            dx < 0 -> instructions.add("Turn left towards your slot.")
+            dx > 0 -> instructions.add("Turn right into your zone.")
+            dx < 0 -> instructions.add("Turn left into your zone.")
         }
+        instructions.add("Proceed forward to your slot.")
     }
+
     return instructions.joinToString(" ")
 }

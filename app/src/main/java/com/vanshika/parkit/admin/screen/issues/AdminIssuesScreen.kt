@@ -21,12 +21,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,8 +36,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vanshika.parkit.ui.theme.ThemePreference
 import com.vanshika.parkit.user.data.model.IssuesDataClass
 import com.vanshika.parkit.user.viewmodel.IssuesViewModel
 import java.text.SimpleDateFormat
@@ -77,10 +81,23 @@ fun AdminIssuesScreen(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             filters.forEach { filter ->
+                val isSelected = selectedFilter == filter
+
+                // Set color based on filter name
+                val chipBg = when {
+                    isSelected && filter == "Pending" -> Color(0xFF1A132F)
+                    isSelected && filter == "In Progress" -> Color(0xFF113547)
+                    isSelected && filter == "Resolved" -> Color(0xFF0A313D)
+                    else -> Color.White // not selected
+                }
+
+                val chipText = if (isSelected) Color.White else Color.Black
+
                 FilterChip(
-                    selected = selectedFilter == filter,
+                    selected = isSelected,
                     onClick = { selectedFilter = filter },
-                    label = { Text(filter) }
+                    label = { Text(filter, color = chipText) },
+                    colors = FilterChipDefaults.filterChipColors(containerColor = chipBg)
                 )
             }
         }
@@ -130,11 +147,21 @@ fun IssueCard(
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val context = LocalContext.current
+
+    val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
+
+    val cardColor = if (isDarkTheme) {
+        Color(0xFF1565C0) // darker blue for dark theme
+    } else {
+        Color(0xFFD0E8FF) // light blue for light theme
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Row(
             modifier = Modifier
@@ -166,10 +193,10 @@ fun IssueCard(
 @Composable
 fun StatusChip(status: String) {
     val (bgColor, textColor) = when (status) {
-        "Pending" -> Color(0xFFFFC107) to Color.Black
-        "In Progress" -> Color(0xFF2196F3) to Color.White
-        "Resolved" -> Color(0xFF4CAF50) to Color.White
-        else -> Color.Gray to Color.White
+        "Pending" -> Color(0xFF1A132F) to Color.Black
+        "In Progress" -> Color(0xFF113547) to Color.Black
+        "Resolved" -> Color(0xFF0A313D) to Color.Black
+        else -> Color(0xFFB0BEC5) to Color.Black
     }
 
     Box(

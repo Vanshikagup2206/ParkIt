@@ -1,8 +1,27 @@
 package com.vanshika.parkit.authentication.ui
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -19,6 +38,20 @@ fun ForgotPasswordScreen(
     var isError by remember { mutableStateOf(false) }
 
     val isLoading by viewModel.isLoading.collectAsState()
+    val passwordResetStatus by viewModel.passwordResetStatus.collectAsState()
+
+    // Observe password reset status
+    LaunchedEffect(passwordResetStatus) {
+        passwordResetStatus?.let { success ->
+            if (success) {
+                message = "Password reset link sent to your email"
+                isError = false
+            } else {
+                message = viewModel.errorMessage.value ?: "Failed to send reset email"
+                isError = true
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -40,24 +73,20 @@ fun ForgotPasswordScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Enter your email") }
+                label = { Text("Enter your email") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = {
-                    viewModel.sendPasswordResetEmail(email) { success, error ->
-                        if (success) {
-                            message = "Password reset link sent to your email"
-                            isError = false
-                        } else {
-                            message = error
-                            isError = true
-                        }
-                    }
+                    message = null // clear previous messages
+                    viewModel.forgotPassword(email.trim())
                 },
                 enabled = !isLoading,
+                modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary

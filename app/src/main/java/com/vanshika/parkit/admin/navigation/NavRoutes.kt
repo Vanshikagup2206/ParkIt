@@ -15,9 +15,21 @@ sealed class NavRoutes(val route: String){
         }
     }
 
+    object UpdateBookings : NavRoutes("update_bookings/{slotId}/{zoneName}/{status}"){
+        fun createRoute(slotId: String, zoneName: String, status: SlotStatus): String{
+            return "update_bookings/$slotId/${Uri.encode(zoneName)}/${status.name}"
+        }
+    }
+
     object IssueDetail : NavRoutes("issue_detail/{issueId}") {
         fun createRoute(issueId: String): String {
             return "issue_detail/$issueId"
         }
     }
+
+    object DailyUsageDetail : NavRoutes("daily_usage_detail")
+
+    object HeatmapDetail : NavRoutes("heatmap_detail")
+
+    object ZoneUsageDetail : NavRoutes("zone_usage_detail")
 }

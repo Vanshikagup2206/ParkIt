@@ -18,6 +18,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vanshika.parkit.admin.data.model.BookingDetailsDataClass
 import com.vanshika.parkit.admin.viewmodel.BookingViewModel
 import com.vanshika.parkit.authentication.viewmodel.AuthenticationViewModel
+import com.vanshika.parkit.ui.theme.ThemePreference
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -110,7 +113,6 @@ fun UserBookingScreen(
     }
 }
 
-// ... BookingCard composable remains the same
 @Composable
 fun BookingCard(booking: BookingDetailsDataClass) {
     val startTime = booking.bookingStartTime?.toDate()
@@ -120,9 +122,19 @@ fun BookingCard(booking: BookingDetailsDataClass) {
     val date = booking.date?.toDate()
         ?.let { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(it) } ?: "-"
 
+    val context = LocalContext.current
+
+    val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
+
+    val cardColor = if (isDarkTheme) {
+        Color(0xFF1565C0) // darker blue for dark theme
+    } else {
+        Color(0xFFD0E8FF) // light blue for light theme
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFD0E8FF))
+        colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)

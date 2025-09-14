@@ -86,17 +86,17 @@ fun IssueDetail(
                 ) {
                     Button(
                         onClick = { viewModel.updateIssueStatus(issue.issueId, "Pending") },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107))
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A132F))
                     ) { Text("Pending") }
 
                     Button(
                         onClick = { viewModel.updateIssueStatus(issue.issueId, "In Progress") },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF113547))
                     ) { Text("In Progress", color = Color.White) }
 
                     Button(
                         onClick = { viewModel.updateIssueStatus(issue.issueId, "Resolved") },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A313D))
                     ) { Text("Resolved", color = Color.White) }
                 }
             }

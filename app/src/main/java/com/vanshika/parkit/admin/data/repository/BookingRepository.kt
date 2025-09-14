@@ -11,14 +11,15 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class BookingRepository @Inject constructor() {
     private val firestore = FirebaseFirestore.getInstance()
     private val collection = firestore.collection("bookings")
     private val notificationsCollection = firestore.collection("notifications")
 
     fun addBookings(booking: BookingDetailsDataClass) {
-//        collection.add(booking.toFireStoreMap())
         collection.document(booking.slotId)
             .set(
                 booking.toFireStoreMap()
@@ -26,7 +27,6 @@ class BookingRepository @Inject constructor() {
                     .plus("customUserId" to booking.customUserId)
             )
             .addOnSuccessListener {
-                // Send booking confirmation notification
                 val notification = NotificationDataClass(
                     title = "Booking Confirmed",
                     message = "Your booking for slot ${booking.slotId} is confirmed!",
@@ -45,17 +45,12 @@ class BookingRepository @Inject constructor() {
                 val status = document.getString("status") ?: SlotStatus.AVAILABLE.name
                 Triple(id, userName, status)
             } ?: emptyList()
+
             onBookingChanged(bookings)
         }
     }
 
-    /**
-     * Fetches only upcoming bookings for a specific user.
-     */
-    fun fetchUpcomingBookings(
-        userId: String,
-        onBookingChanged: (List<BookingDetailsDataClass>) -> Unit
-    ) {
+    fun fetchUpcomingBookings(userId: String, onBookingChanged: (List<BookingDetailsDataClass>) -> Unit) {
         collection.whereEqualTo("customUserId", userId)
             .whereGreaterThan("bookingEndTime", Timestamp.now())
             .orderBy("bookingEndTime")
@@ -63,18 +58,11 @@ class BookingRepository @Inject constructor() {
                 val bookings = snapshot?.documents?.mapNotNull { doc ->
                     doc.toObject(BookingDetailsDataClass::class.java)
                 } ?: emptyList()
-
                 onBookingChanged(bookings)
             }
     }
 
-    /**
-     * Fetches only past bookings (history) for a specific user.
-     */
-    fun fetchBookingHistory(
-        userId: String,
-        onBookingChanged: (List<BookingDetailsDataClass>) -> Unit
-    ) {
+    fun fetchBookingHistory(userId: String, onBookingChanged: (List<BookingDetailsDataClass>) -> Unit) {
         collection.whereEqualTo("customUserId", userId)
             .whereLessThan("bookingEndTime", Timestamp.now())
             .orderBy("bookingEndTime", Query.Direction.DESCENDING)
@@ -86,8 +74,46 @@ class BookingRepository @Inject constructor() {
             }
     }
 
-    fun updateBookings(id: String, newUserName: String) {
-        collection.document(id).update("userName", newUserName)
+    fun addBookingHistory(booking: BookingDetailsDataClass) {
+        firestore.collection("bookingHistory")
+            .add(booking)
+    }
+
+    fun fetchAllBookingHistory(onResult: (List<BookingDetailsDataClass>) -> Unit) {
+        firestore.collection("bookingHistory")
+            .addSnapshotListener { snapshot, _ ->
+                val bookings = snapshot?.documents
+                    ?.mapNotNull { it.toObject(BookingDetailsDataClass::class.java) }
+                    ?: emptyList()
+                onResult(bookings)
+            }
+    }
+
+    fun fetchAllUsers(onResult: (List<BookingDetailsDataClass>) -> Unit) {
+        collection.addSnapshotListener { snapshot, _ ->
+            val users = snapshot?.documents
+                ?.mapNotNull { it.toObject(BookingDetailsDataClass::class.java) }
+                ?: emptyList()
+            onResult(users)
+        }
+    }
+
+    fun updateBooking(booking: BookingDetailsDataClass) {
+        collection.document(booking.slotId)
+            .set(
+                booking.toFireStoreMap()
+                    .plus("status" to booking.status.name)
+                    .plus("customUserId" to booking.customUserId)
+            )
+            .addOnSuccessListener {
+                val notification = NotificationDataClass(
+                    title = "Booking Updated",
+                    message = "Your booking for slot ${booking.slotId} was updated.",
+                    type = "booking_updated",
+                    userId = booking.customUserId
+                )
+                notificationsCollection.add(notification)
+            }
     }
 
     fun updateSlotStatus(slotId: String, newStatus: SlotStatus, userId: String? = null) {
@@ -99,7 +125,6 @@ class BookingRepository @Inject constructor() {
                 docRef.set(mapOf("slotId" to slotId, "status" to newStatus.name))
             }
 
-            // Notifications handled here
             when (newStatus) {
                 SlotStatus.AVAILABLE -> userId?.let {
                     sendNotification(
@@ -139,30 +164,6 @@ class BookingRepository @Inject constructor() {
         collection.document(id).delete()
     }
 
-    /**
-    {
-    "Zone A" to 12,
-    "Zone B" to 7,
-    "Zone C" to 5
-    }
-    collection points at your bookings collection in Fire store.
-
-    addSnapshotListener sets up a real-time listener. Whenever documents change (added/updated/deleted),
-    this callback fires with the new snapshot.
-
-    snapshot?.documents → iterate all documents.
-
-    mapNotNull { it.getString("zone") }
-    Pull the zone string from each doc. If a doc does’t have a zone (null), it’s ignored.
-
-    groupingBy { it }.eachCount()
-    Classic Kotlin trick: it counts how many times each zone string appears → gives you a Map<String, Int>, like {"A"=12, "B"=9, ...}.
-
-    onResult(zoneCounts)
-    Push the counts back to whoever asked (your ViewModel), which will then update Compose state.
-     */
-    /** Zone usage analytics */
-
     fun fetchZoneUsage(onResult: (Map<String, Int>) -> Unit) {
         collection.addSnapshotListener { snapshot, _ ->
             val zoneCounts = snapshot?.documents
@@ -174,24 +175,6 @@ class BookingRepository @Inject constructor() {
         }
     }
 
-    /**
-     * Fetch all users for autocomplete dropdown
-     */
-    fun fetchAllUsers(onResult: (List<BookingDetailsDataClass>) -> Unit) {
-        collection.addSnapshotListener { snapshot, _ ->
-            val users = snapshot?.documents
-                ?.mapNotNull { it.toObject(BookingDetailsDataClass::class.java) }
-                ?: emptyList()
-            onResult(users)
-        }
-    }
-
-    /**
-    This gives you a map like:
-    { (2,16)=3, (4,18)=5 } meaning
-    Monday 16:00 = 3 bookings, Thursday 18:00 = 5 bookings.
-     * */
-
     fun fetchHeatmapData(onResult: (Map<Pair<Int, Int>, Int>) -> Unit) {
         collection.addSnapshotListener { snapshot, _ ->
             val counts = snapshot?.documents
@@ -200,10 +183,9 @@ class BookingRepository @Inject constructor() {
                         doc.getTimestamp("bookingStartTime")?.toDate() ?: return@mapNotNull null
                     val cal = Calendar.getInstance().apply { time = timestamp }
 
-                    val rawDay = cal.get(Calendar.DAY_OF_WEEK) // 1=Sun … 7=Sat
-                    val dayIndex = (rawDay + 5) % 7            // Mon=0 … Sun=6
-
-                    val hour = cal.get(Calendar.HOUR_OF_DAY)  // 0–23
+                    val rawDay = cal.get(Calendar.DAY_OF_WEEK)
+                    val dayIndex = (rawDay + 5) % 7
+                    val hour = cal.get(Calendar.HOUR_OF_DAY)
                     val hourBucket = (hour / 4) * 4
                     Pair(dayIndex, hourBucket)
                 }
@@ -221,17 +203,15 @@ class BookingRepository @Inject constructor() {
                 ?.mapNotNull { doc ->
                     val timestamp =
                         doc.getTimestamp("createdAt")?.toDate() ?: return@mapNotNull null
-                    val sdf = SimpleDateFormat("EEE", Locale.getDefault()) // Mon, Tue …
+                    val sdf = SimpleDateFormat("EEE", Locale.getDefault())
                     sdf.format(timestamp)
                 }
                 ?.groupingBy { it }
                 ?.eachCount()
                 ?: emptyMap()
 
-            // Ensure all days exist (even if 0 bookings)
             val allDays = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
             val finalMap = allDays.associateWith { counts[it] ?: 0 }
-
             onResult(finalMap)
         }
     }
@@ -252,7 +232,7 @@ class BookingRepository @Inject constructor() {
     fun fetchTopUser(onResult: (String?) -> Unit) {
         collection.addSnapshotListener { snapshot, _ ->
             val userCounts = snapshot?.documents
-                ?.mapNotNull { it.getString("userName") } // or userId
+                ?.mapNotNull { it.getString("userName") }
                 ?.groupingBy { it }
                 ?.eachCount()
                 ?.maxByOrNull { it.value }
@@ -267,12 +247,11 @@ class BookingRepository @Inject constructor() {
         userId: String?
     ) {
         val notification = NotificationDataClass(
-                title = title,
-                message = message,
-                type = type,
-                userId = userId
-            )
+            title = title,
+            message = message,
+            type = type,
+            userId = userId
+        )
         notificationsCollection.add(notification)
     }
-
 }

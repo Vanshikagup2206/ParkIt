@@ -1,7 +1,6 @@
 package com.vanshika.parkit.authentication.viewmodel
 
 import android.content.Context
-import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -30,6 +29,15 @@ class AuthenticationViewModel @Inject constructor() : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _passwordResetStatus = MutableStateFlow<Boolean?>(null)
+    val passwordResetStatus: StateFlow<Boolean?> = _passwordResetStatus
+
+    init {
+        auth.currentUser?.let {
+            fetchAndSetCustomUserId(it)
+        }
+    }
 
     fun signup(email: String, password: String, customId: String) {
         _isLoading.value = true
@@ -79,7 +87,6 @@ class AuthenticationViewModel @Inject constructor() : ViewModel() {
                             task.exception?.message ?: "Failed to update password",
                             Toast.LENGTH_SHORT
                         ).show()
-                        Log.e("AuthVM", "Update password error", task.exception)
                     }
                 }
         } else {
@@ -100,24 +107,27 @@ class AuthenticationViewModel @Inject constructor() : ViewModel() {
                 _customUserId.value = customId
                 _role.value = role
             }
+            .addOnFailureListener {
+                _errorMessage.value = it.message
+            }
     }
 
     private fun fetchAndSetCustomUserId(user: FirebaseUser) {
         firestore.collection("customId")
             .whereEqualTo("email", user.email)
             .get()
-            .addOnSuccessListener { document ->
-                if (!document.isEmpty) {
-                    val doc = document.documents[0]
+            .addOnSuccessListener { documents ->
+                if (!documents.isEmpty) {
+                    val doc = documents.documents[0]
                     _customUserId.value = doc.getString("customUserId")
                     _role.value = doc.getString("role")
                 } else {
-                    // only error log keep
-                    Log.e("AuthVM", "No customId doc found for email=${user.email}")
+                    _customUserId.value = null
+                    _role.value = null
                 }
             }
-            .addOnFailureListener { e ->
-                Log.e("AuthVM", "Error fetching customId", e)
+            .addOnFailureListener {
+                _errorMessage.value = it.message
             }
     }
 
@@ -133,15 +143,17 @@ class AuthenticationViewModel @Inject constructor() : ViewModel() {
         _user.value?.let { fetchAndSetCustomUserId(it) }
     }
 
-    fun sendPasswordResetEmail(email: String, callback: (Boolean, String?) -> Unit) {
+    fun forgotPassword(email: String) {
         _isLoading.value = true
+        _passwordResetStatus.value = null
         auth.sendPasswordResetEmail(email)
             .addOnCompleteListener { task ->
                 _isLoading.value = false
                 if (task.isSuccessful) {
-                    callback(true, null)
+                    _passwordResetStatus.value = true
                 } else {
-                    callback(false, task.exception?.message ?: "Error sending reset email")
+                    _passwordResetStatus.value = false
+                    _errorMessage.value = task.exception?.message ?: "Failed to send reset email"
                 }
             }
     }

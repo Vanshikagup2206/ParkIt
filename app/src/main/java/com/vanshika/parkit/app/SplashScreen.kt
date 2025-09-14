@@ -14,40 +14,79 @@ import com.vanshika.parkit.MainNavRoutes
 import com.vanshika.parkit.authentication.viewmodel.AuthenticationViewModel
 import kotlinx.coroutines.delay
 
+//@Composable
+//fun SplashScreen(
+//    navHostController: NavHostController,
+//    authenticationViewModel: AuthenticationViewModel
+//) {
+//    // 🔹 Observe user state from ViewModel
+//    val user by authenticationViewModel.user.collectAsState()
+//    val customId by authenticationViewModel.customUserId.collectAsState()
+//
+//    LaunchedEffect(user, customId) {
+//        authenticationViewModel.checkLoggedInUser()
+//        delay(1200)
+//
+//        val currentUser = user
+//
+//        if (currentUser != null && customId != null) {
+//            if (customId == "12200814") {
+//                navHostController.navigate(MainNavRoutes.AdminMain.route) {
+//                    popUpTo(MainNavRoutes.SplashScreen.route) { inclusive = true }
+//                }
+//            } else {
+//                navHostController.navigate(MainNavRoutes.UserMain.route) {
+//                    popUpTo(MainNavRoutes.SplashScreen.route) { inclusive = true }
+//                }
+//            }
+//        } else {
+//            navHostController.navigate(MainNavRoutes.Login.route) {
+//                popUpTo(MainNavRoutes.SplashScreen.route) { inclusive = true }
+//            }
+//        }
+//    }
+//
+//    // 🔹 Loader UI
+//    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+//        CircularProgressIndicator()
+//    }
+//}
+
 @Composable
 fun SplashScreen(
     navHostController: NavHostController,
     authenticationViewModel: AuthenticationViewModel
 ) {
-    // 🔹 Observe user state from ViewModel
     val user by authenticationViewModel.user.collectAsState()
     val customId by authenticationViewModel.customUserId.collectAsState()
 
     LaunchedEffect(user, customId) {
-        authenticationViewModel.checkLoggedInUser()
-        delay(1200)
-
-        val currentUser = user
-
-        if (currentUser != null && customId != null) {
-            if (customId == "12200814") {
-                navHostController.navigate(MainNavRoutes.AdminMain.route) {
-                    popUpTo(MainNavRoutes.SplashScreen.route) { inclusive = true }
-                }
-            } else {
-                navHostController.navigate(MainNavRoutes.UserMain.route) {
+        when {
+            user == null -> {
+                navHostController.navigate(MainNavRoutes.Login.route) {
                     popUpTo(MainNavRoutes.SplashScreen.route) { inclusive = true }
                 }
             }
-        } else {
-            navHostController.navigate(MainNavRoutes.Login.route) {
-                popUpTo(MainNavRoutes.SplashScreen.route) { inclusive = true }
+            user != null && customId != null -> {
+                delay(1200)
+                if (customId == "12200814") {
+                    navHostController.navigate(MainNavRoutes.AdminMain.route) {
+                        popUpTo(MainNavRoutes.SplashScreen.route) { inclusive = true }
+                    }
+                } else {
+                    navHostController.navigate(MainNavRoutes.UserMain.route) {
+                        popUpTo(MainNavRoutes.SplashScreen.route) { inclusive = true }
+                    }
+                }
             }
+            else -> {}
         }
     }
 
-    // 🔹 Loader UI
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
         CircularProgressIndicator()
     }
 }

@@ -366,18 +366,33 @@ fun BookedSlotDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Booked Slot") },
         text = {
             Column {
                 TextButton(onClick = {
+                    navController.navigate(
+                        NavRoutes.UpdateBookings.createRoute(
+                            slotData.id,
+                            slotData.zoneName,
+                            SlotStatus.BOOKED // original status
+                        )
+                    )
+                    onDismiss()
+                }) { Text("Update Booking") }
+
+                // --- Cancel Booking ---
+                TextButton(onClick = {
                     onStatusChange(SlotStatus.AVAILABLE)
                     viewModel.updateSlotStatus(slotData.id, SlotStatus.AVAILABLE)
-                    Toast.makeText(context, "Booking removed", Toast.LENGTH_SHORT).show()
+                    viewModel.deleteBookings(slotData.id)
+                    Toast.makeText(context, "Booking cancelled", Toast.LENGTH_SHORT).show()
                     onDismiss()
-                }) { Text("UnMark Booking") }
+                }) { Text("Cancel Booking") }
 
+                // --- Convert to Reserved ---
                 TextButton(onClick = {
                     onStatusChange(SlotStatus.RESERVED)
                     viewModel.updateSlotStatus(slotData.id, SlotStatus.RESERVED)
@@ -391,6 +406,7 @@ fun BookedSlotDialog(
                     onDismiss()
                 }) { Text("Mark as Reserved") }
 
+                // --- Mark under maintenance ---
                 TextButton(onClick = {
                     onStatusChange(SlotStatus.MAINTENANCE)
                     viewModel.updateSlotStatus(slotData.id, SlotStatus.MAINTENANCE)
@@ -399,7 +415,8 @@ fun BookedSlotDialog(
                 }) { Text("Mark under maintenance") }
             }
         },
-        confirmButton = {}, dismissButton = {}
+        confirmButton = {},
+        dismissButton = {}
     )
 }
 
@@ -418,8 +435,20 @@ fun ReservedSlotDialog(
         text = {
             Column {
                 TextButton(onClick = {
+                    navController.navigate(
+                        NavRoutes.UpdateBookings.createRoute(
+                            slotData.id,
+                            slotData.zoneName,
+                            SlotStatus.BOOKED // original status
+                        )
+                    )
+                    onDismiss()
+                }) { Text("Update Booking") }
+
+                TextButton(onClick = {
                     onStatusChange(SlotStatus.AVAILABLE)
                     viewModel.updateSlotStatus(slotData.id, SlotStatus.AVAILABLE)
+                    viewModel.deleteBookings(slotData.id)
                     Toast.makeText(context, "Reservation removed", Toast.LENGTH_SHORT).show()
                     onDismiss()
                 }) { Text("UnMark Reserved") }
