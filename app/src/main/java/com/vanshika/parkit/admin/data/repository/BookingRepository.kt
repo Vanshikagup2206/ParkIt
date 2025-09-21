@@ -273,7 +273,7 @@ class BookingRepository @Inject constructor() {
         val url = "https://onesignal.com/api/v1/notifications"
 
         val json = JSONObject().apply {
-            put("app_id", "531eda43-b91a-4e09-b931-0bd569b034e9")
+            put("app_id", "")
 
             if (userId != null) {
                 put("include_external_user_ids", JSONArray().put(userId))
@@ -288,7 +288,7 @@ class BookingRepository @Inject constructor() {
         val body = json.toString().toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
             .url(url)
-            .addHeader("Authorization", "Basic os_v2_app_kmpnuq5zdjhatojrbpkwtmbu5edshqyobg6edoeeg7wfoshjeo5yzccvj5u4bftneq4vwepwtbvemcwbv2jxd6fs2pfnsyrissyzlui")
+            .addHeader("Authorization", "Basic ")
             .post(body)
             .build()
 
