@@ -7,6 +7,13 @@ import com.vanshika.parkit.admin.data.model.BookingDetailsDataClass
 import com.vanshika.parkit.admin.data.model.NotificationDataClass
 import com.vanshika.parkit.admin.data.model.toFireStoreMap
 import com.vanshika.parkit.admin.screen.home.SlotStatus
+import com.vanshika.parkit.user.data.model.IssuesDataClass
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -27,13 +34,12 @@ class BookingRepository @Inject constructor() {
                     .plus("customUserId" to booking.customUserId)
             )
             .addOnSuccessListener {
-                val notification = NotificationDataClass(
-                    title = "Booking Confirmed",
+                sendNotification(
+                    title = "✅ Booking Confirmed",
                     message = "Your booking for slot ${booking.slotId} is confirmed!",
                     type = "booking_confirmed",
                     userId = booking.customUserId
                 )
-                notificationsCollection.add(notification)
             }
     }
 
@@ -45,12 +51,14 @@ class BookingRepository @Inject constructor() {
                 val status = document.getString("status") ?: SlotStatus.AVAILABLE.name
                 Triple(id, userName, status)
             } ?: emptyList()
-
             onBookingChanged(bookings)
         }
     }
 
-    fun fetchUpcomingBookings(userId: String, onBookingChanged: (List<BookingDetailsDataClass>) -> Unit) {
+    fun fetchUpcomingBookings(
+        userId: String,
+        onBookingChanged: (List<BookingDetailsDataClass>) -> Unit
+    ) {
         collection.whereEqualTo("customUserId", userId)
             .whereGreaterThan("bookingEndTime", Timestamp.now())
             .orderBy("bookingEndTime")
@@ -62,7 +70,10 @@ class BookingRepository @Inject constructor() {
             }
     }
 
-    fun fetchBookingHistory(userId: String, onBookingChanged: (List<BookingDetailsDataClass>) -> Unit) {
+    fun fetchBookingHistory(
+        userId: String,
+        onBookingChanged: (List<BookingDetailsDataClass>) -> Unit
+    ) {
         collection.whereEqualTo("customUserId", userId)
             .whereLessThan("bookingEndTime", Timestamp.now())
             .orderBy("bookingEndTime", Query.Direction.DESCENDING)
@@ -106,13 +117,12 @@ class BookingRepository @Inject constructor() {
                     .plus("customUserId" to booking.customUserId)
             )
             .addOnSuccessListener {
-                val notification = NotificationDataClass(
-                    title = "Booking Updated",
+                sendNotification(
+                    title = "✅ Booking Updated",
                     message = "Your booking for slot ${booking.slotId} was updated.",
                     type = "booking_updated",
                     userId = booking.customUserId
                 )
-                notificationsCollection.add(notification)
             }
     }
 
@@ -136,7 +146,7 @@ class BookingRepository @Inject constructor() {
                 }
 
                 SlotStatus.MAINTENANCE -> sendNotification(
-                    title = "Slot Under Maintenance",
+                    title = "⛔ Slot Under Maintenance",
                     message = "Slot $slotId is under maintenance. Sorry for inconvenience.",
                     type = "maintenance",
                     userId = null
@@ -144,7 +154,7 @@ class BookingRepository @Inject constructor() {
 
                 SlotStatus.BOOKED -> userId?.let {
                     sendNotification(
-                        title = "Booking Confirmed",
+                        title = "✅ Booking Confirmed",
                         message = "Your booking for slot $slotId is confirmed.",
                         type = "booking_confirmed",
                         userId = it
@@ -154,10 +164,6 @@ class BookingRepository @Inject constructor() {
                 else -> {}
             }
         }
-    }
-
-    fun sendMaintenanceNotice(title: String, message: String) {
-        sendNotification(title, message, type = "maintenance", userId = null)
     }
 
     fun deleteBookings(id: String) {
@@ -250,8 +256,54 @@ class BookingRepository @Inject constructor() {
             title = title,
             message = message,
             type = type,
-            userId = userId
+            userId = userId,
+            isRead = false
         )
-        notificationsCollection.add(notification)
+        val docRef = notificationsCollection.document()
+        docRef.set(notification.copy(id = docRef.id))
+
+        if (userId != null) {
+            sendPushToOneSignal(userId, title, message)
+        } else {
+            sendPushToOneSignal(null, title, message)
+        }
+    }
+
+    private fun sendPushToOneSignal(userId: String?, title: String, message: String) {
+        val url = "https://onesignal.com/api/v1/notifications"
+
+        val json = JSONObject().apply {
+            put("app_id", "531eda43-b91a-4e09-b931-0bd569b034e9")
+
+            if (userId != null) {
+                put("include_external_user_ids", JSONArray().put(userId))
+            } else {
+                put("included_segments", JSONArray().put("All"))
+            }
+
+            put("headings", JSONObject().put("en", title))
+            put("contents", JSONObject().put("en", message))
+        }
+
+        val body = json.toString().toRequestBody("application/json".toMediaType())
+        val request = Request.Builder()
+            .url(url)
+            .addHeader("Authorization", "Basic os_v2_app_kmpnuq5zdjhatojrbpkwtmbu5edshqyobg6edoeeg7wfoshjeo5yzccvj5u4bftneq4vwepwtbvemcwbv2jxd6fs2pfnsyrissyzlui")
+            .post(body)
+            .build()
+
+        Thread {
+            try {
+                OkHttpClient().newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string()
+                    android.util.Log.d("OneSignalDebug", "📩 Sending push to OneSignal")
+                    android.util.Log.d("OneSignalDebug", "➡️ Request JSON: $json")
+                    android.util.Log.d("OneSignalDebug", "✅ Response Code: ${response.code}")
+                    android.util.Log.d("OneSignalDebug", "📨 Response Body: $responseBody")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("OneSignalDebug", "❌ Error sending push: ${e.message}", e)
+            }
+        }.start()
     }
 }

@@ -7,6 +7,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.onesignal.OneSignal
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -106,6 +107,11 @@ class AuthenticationViewModel @Inject constructor() : ViewModel() {
             .addOnSuccessListener {
                 _customUserId.value = customId
                 _role.value = role
+                try {
+                    OneSignal.login(customId)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
             .addOnFailureListener {
                 _errorMessage.value = it.message
@@ -119,8 +125,14 @@ class AuthenticationViewModel @Inject constructor() : ViewModel() {
             .addOnSuccessListener { documents ->
                 if (!documents.isEmpty) {
                     val doc = documents.documents[0]
+                    val fetchedCustomId = doc.getString("customUserId")
                     _customUserId.value = doc.getString("customUserId")
                     _role.value = doc.getString("role")
+                    try {
+                        fetchedCustomId?.let { OneSignal.login(it) }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 } else {
                     _customUserId.value = null
                     _role.value = null
@@ -136,6 +148,7 @@ class AuthenticationViewModel @Inject constructor() : ViewModel() {
         _user.value = null
         _customUserId.value = null
         _role.value = null
+        OneSignal.logout()
     }
 
     fun checkLoggedInUser() {

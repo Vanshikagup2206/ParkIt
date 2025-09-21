@@ -27,7 +27,9 @@ fun IssueDetail(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Issue Details") },
+                    title = {
+                        Text("Issue Details")
+                    },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -51,34 +53,61 @@ fun IssueDetail(
                     .fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("Zone: ${issue.zoneName}", style = MaterialTheme.typography.titleLarge)
-                Text("Slot ID: ${issue.slotId}", style = MaterialTheme.typography.bodyLarge)
-                Text("Reported By: ${issue.reportedBy}", style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    "Reported At: ${issue.reportedAt.toReadableDate()}",
+                    text = "Zone: ${issue.zoneName}",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Text(
+                    text = "Slot ID: ${issue.slotId}",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = "Reported By: ${issue.reportedBy}",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = "Reported At: ${issue.reportedAt.toReadableDate()}",
                     style = MaterialTheme.typography.bodyMedium
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text("Issue Type:", style = MaterialTheme.typography.titleMedium)
-                Text(issue.issueType, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = "Issue Type:",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = issue.issueType,
+                    style = MaterialTheme.typography.bodyLarge
+                )
 
                 if (issue.issueType == "Other" && issue.customDescription.isNotBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Custom Description:", style = MaterialTheme.typography.titleMedium)
-                    Text(issue.customDescription, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = "Custom Description:",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = issue.customDescription,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text("Status:", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = "Status:",
+                    style = MaterialTheme.typography.titleMedium
+                )
                 StatusChip(status = issue.status)
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // 🔹 Admin Controls
-                Text("Update Status:", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = "Update Status:",
+                    style = MaterialTheme.typography.titleMedium
+                )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -86,23 +115,42 @@ fun IssueDetail(
                 ) {
                     Button(
                         onClick = { viewModel.updateIssueStatus(issue.issueId, "Pending") },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A132F))
-                    ) { Text("Pending") }
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFCC80))
+                    ) {
+                        Text(
+                            text = "Pending",
+                            color = Color(0xFF424242)
+                        )
+                    }
 
                     Button(
                         onClick = { viewModel.updateIssueStatus(issue.issueId, "In Progress") },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF113547))
-                    ) { Text("In Progress", color = Color.White) }
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8A65))
+                    ) {
+                        Text(
+                            text = "In Progress",
+                            color = Color.White
+                        )
+                    }
 
                     Button(
                         onClick = { viewModel.updateIssueStatus(issue.issueId, "Resolved") },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0A313D))
-                    ) { Text("Resolved", color = Color.White) }
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF81C784))
+                    ) {
+                        Text(
+                            text = "Resolved",
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }
     } else {
-        Text("Issue not found", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
+        Text(
+            "Issue not found",
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(16.dp)
+        )
     }
 }
 

@@ -12,7 +12,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.vanshika.parkit.MainNavRoutes
-import com.vanshika.parkit.admin.data.repository.BookingRepository
 import com.vanshika.parkit.admin.screen.analytics.AdminAnalyticsScreen
 import com.vanshika.parkit.admin.screen.analytics.components.DailyUsageDetailsScreen
 import com.vanshika.parkit.admin.screen.analytics.components.HeatmapDetailsScreen
@@ -24,7 +23,6 @@ import com.vanshika.parkit.admin.screen.home.UpdateBookings
 import com.vanshika.parkit.admin.screen.issues.AdminIssuesScreen
 import com.vanshika.parkit.admin.screen.issues.IssueDetail
 import com.vanshika.parkit.admin.screen.profile.AdminProfileScreen
-import com.vanshika.parkit.admin.viewmodel.BookingViewModel
 import com.vanshika.parkit.authentication.viewmodel.AuthenticationViewModel
 import com.vanshika.parkit.ui.theme.ThemePreference
 import kotlinx.coroutines.launch
@@ -110,7 +108,22 @@ fun AdminNavigationGraph(
         composable(NavRoutes.UpdateBookings.route) { backStackEntry ->
             val slotId = backStackEntry.arguments?.getString("slotId") ?: ""
             val zoneName = backStackEntry.arguments?.getString("zoneName") ?: ""
-            val statusName = backStackEntry.arguments?.getString("status") ?: SlotStatus.AVAILABLE.name
+            val statusName =
+                backStackEntry.arguments?.getString("status") ?: SlotStatus.AVAILABLE.name
+            val originalStatus = SlotStatus.valueOf(statusName)
+
+            UpdateBookings(
+                slotId = slotId,
+                zoneName = zoneName,
+                originalStatus = originalStatus,
+                onNavigateUp = { navHostController.navigateUp() }
+            )
+        }
+        composable(NavRoutes.UpdateReserveBookings.route) { backStackEntry ->
+            val slotId = backStackEntry.arguments?.getString("slotId") ?: ""
+            val zoneName = backStackEntry.arguments?.getString("zoneName") ?: ""
+            val statusName =
+                backStackEntry.arguments?.getString("status") ?: SlotStatus.AVAILABLE.name
             val originalStatus = SlotStatus.valueOf(statusName)
 
             UpdateBookings(

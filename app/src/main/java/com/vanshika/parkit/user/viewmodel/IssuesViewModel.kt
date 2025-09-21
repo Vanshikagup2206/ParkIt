@@ -14,9 +14,6 @@ class IssuesViewModel @Inject constructor(
     var allIssues = mutableStateListOf<IssuesDataClass>()
         private set
 
-    var userIssues = mutableStateListOf<IssuesDataClass>()
-        private set
-
     init {
         fetchAllIssues()
     }
@@ -30,13 +27,6 @@ class IssuesViewModel @Inject constructor(
         }
     }
 
-    fun fetchUserIssue(userId: String){
-        issuesRepository.fetchUserIssues(userId){issues ->
-            userIssues.clear()
-            userIssues.addAll(issues)
-        }
-    }
-
     fun getIssueById(issueId: String): IssuesDataClass? {
         return allIssues.find { it.issueId == issueId }
     }
@@ -44,4 +34,8 @@ class IssuesViewModel @Inject constructor(
     fun updateIssueStatus(issueId: String, newStatus: String) = issuesRepository.updateIssueStatus(issueId, newStatus)
 
     fun deleteIssue(issueId: String) = issuesRepository.deleteIssue(issueId)
+
+    fun notifyAdmin(issue: IssuesDataClass) {
+        issuesRepository.sendNotificationToAdmin(issue)
+    }
 }

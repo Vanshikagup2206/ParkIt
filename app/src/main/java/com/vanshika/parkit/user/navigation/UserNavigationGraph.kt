@@ -67,7 +67,6 @@ fun UserNavigationGraph(
         }
 
         //navigation
-
         composable(UserNavRoutes.ReportScreen.route) { navBackStackEntry ->
             val slotId = navBackStackEntry.arguments?.getString("slotId") ?: ""
             val zoneName = navBackStackEntry.arguments?.getString("zoneName") ?: ""

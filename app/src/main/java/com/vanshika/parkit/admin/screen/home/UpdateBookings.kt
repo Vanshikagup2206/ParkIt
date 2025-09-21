@@ -8,8 +8,10 @@ import android.speech.RecognizerIntent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -22,6 +24,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.firebase.Timestamp
@@ -40,7 +43,7 @@ fun UpdateBookings(
     originalStatus: SlotStatus,
     viewModel: BookingViewModel = hiltViewModel(),
     onNavigateUp: () -> Unit
-){
+) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
@@ -63,7 +66,8 @@ fun UpdateBookings(
     var priorityTagError by remember { mutableStateOf("") }
 
     var dateError by remember { mutableStateOf("") }
-    var timeError by remember { mutableStateOf("") }
+    var startTimeError by remember { mutableStateOf("") }
+    var endTimeError by remember { mutableStateOf("") }
 
     val priorityOptions = listOf("Normal", "Staff", "Student")
     var priorityExpanded by remember { mutableStateOf(false) }
@@ -218,11 +222,19 @@ fun UpdateBookings(
                     )
                     ExposedDropdownMenu(
                         expanded = vehicleNoExpanded && vehicleNoSuggestions.isNotEmpty(),
-                        onDismissRequest = { vehicleNoExpanded = false }
+                        onDismissRequest = { vehicleNoExpanded = false },
+                        modifier = Modifier.background(
+                            color = if (isDarkTheme) Color.Black else Color.White
+                        )
                     ) {
                         vehicleNoSuggestions.forEach { suggestion ->
                             DropdownMenuItem(
-                                text = { Text(suggestion) },
+                                text = {
+                                    Text(
+                                        text = suggestion,
+                                        color = if (isDarkTheme) Color.White else Color.Black
+                                    )
+                                },
                                 onClick = {
                                     vehicleNo = suggestion
                                     val user = allBookings.find { it.vehicleNumber == suggestion }
@@ -290,11 +302,19 @@ fun UpdateBookings(
                     )
                     ExposedDropdownMenu(
                         expanded = userIdExpanded && userIdSuggestions.isNotEmpty(),
-                        onDismissRequest = { userIdExpanded = false }
+                        onDismissRequest = { userIdExpanded = false },
+                        modifier = Modifier.background(
+                            color = if (isDarkTheme) Color.Black else Color.White
+                        )
                     ) {
                         userIdSuggestions.forEach { user ->
                             DropdownMenuItem(
-                                text = { Text("${user.customUserId} - ${user.userName}") },
+                                text = {
+                                    Text(
+                                        text = "${user.customUserId} - ${user.userName}",
+                                        color = if (isDarkTheme) Color.White else Color.Black
+                                    )
+                                },
                                 onClick = {
                                     userId = user.customUserId
                                     username = user.userName
@@ -339,11 +359,19 @@ fun UpdateBookings(
                     )
                     ExposedDropdownMenu(
                         expanded = usernameExpanded && usernameSuggestions.isNotEmpty(),
-                        onDismissRequest = { usernameExpanded = false }
+                        onDismissRequest = { usernameExpanded = false },
+                        modifier = Modifier.background(
+                            color = if (isDarkTheme) Color.Black else Color.White
+                        )
                     ) {
                         usernameSuggestions.forEach { user ->
                             DropdownMenuItem(
-                                text = { Text("${user.userName} - ${user.customUserId}") },
+                                text = {
+                                    Text(
+                                        text = "${user.userName} - ${user.customUserId}",
+                                        color = if (isDarkTheme) Color.White else Color.Black
+                                    )
+                                },
                                 onClick = {
                                     username = user.userName
                                     userId = user.customUserId
@@ -400,6 +428,7 @@ fun UpdateBookings(
                             Text(text = contactNoError, color = MaterialTheme.colorScheme.error)
                         }
                     },
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     placeholder = { Text("Enter Phone Number") },
                     modifier = Modifier.fillMaxWidth()
@@ -434,11 +463,19 @@ fun UpdateBookings(
                     )
                     ExposedDropdownMenu(
                         expanded = priorityExpanded,
-                        onDismissRequest = { priorityExpanded = false }
+                        onDismissRequest = { priorityExpanded = false },
+                        modifier = Modifier.background(
+                            color = if (isDarkTheme) Color.Black else Color.White
+                        )
                     ) {
                         priorityOptions.forEach { option ->
                             DropdownMenuItem(
-                                text = { Text(option) },
+                                text = {
+                                    Text(
+                                        text = option,
+                                        color = if (isDarkTheme) Color.White else Color.Black
+                                    )
+                                },
                                 onClick = {
                                     priorityTag = option
                                     priorityExpanded = false
@@ -500,7 +537,7 @@ fun UpdateBookings(
                                     cal.set(Calendar.HOUR_OF_DAY, hourOfDay)
                                     cal.set(Calendar.MINUTE, minute)
                                     startTimePicked = timeFormatter.format(cal.time)
-                                    timeError = ""
+                                    startTimeError = ""
                                 },
                                 calendar.get(Calendar.HOUR_OF_DAY),
                                 calendar.get(Calendar.MINUTE),
@@ -512,7 +549,7 @@ fun UpdateBookings(
                             containerColor = MaterialTheme.colorScheme.surface
                         ),
                         border = ButtonDefaults.outlinedButtonBorder.copy(
-                            brush = if (timeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error)
+                            brush = if (startTimeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error)
                             else SolidColor(MaterialTheme.colorScheme.outline)
                         )
                     ) {
@@ -529,7 +566,7 @@ fun UpdateBookings(
                                     cal.set(Calendar.HOUR_OF_DAY, hourOfDay)
                                     cal.set(Calendar.MINUTE, minute)
                                     endTimePicked = timeFormatter.format(cal.time)
-                                    timeError = ""
+                                    endTimeError = ""
                                 },
                                 calendar.get(Calendar.HOUR_OF_DAY),
                                 calendar.get(Calendar.MINUTE),
@@ -541,7 +578,7 @@ fun UpdateBookings(
                             containerColor = MaterialTheme.colorScheme.surface
                         ),
                         border = ButtonDefaults.outlinedButtonBorder.copy(
-                            brush = if (timeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error)
+                            brush = if (endTimeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error)
                             else SolidColor(MaterialTheme.colorScheme.outline)
                         )
                     ) {
@@ -571,8 +608,8 @@ fun UpdateBookings(
                                 contactNo.isBlank() -> contactNoError = "Enter contact no."
                                 contactNo.length < 10 -> contactNoError = "Enter valid mobile no"
                                 datePicked.isBlank() -> dateError = "Select date"
-                                startTimePicked.isBlank() -> timeError = "Select start time"
-                                endTimePicked.isBlank() -> timeError = "Select end time"
+                                startTimePicked.isBlank() -> startTimeError = "Select start time"
+                                endTimePicked.isBlank() -> endTimeError = "Select end time"
                                 priorityTag.isBlank() -> priorityTagError = "Select one"
                                 else -> {
                                     val dateTimeFormat =

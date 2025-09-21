@@ -3,25 +3,12 @@ package com.vanshika.parkit.admin.screen.analytics.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -44,7 +31,10 @@ fun DailyUsageLineChart(
     val usage by viewModel.dailyUsage
     val days = usage.keys.toList()
     val values = usage.values.toList()
-    val maxY = (values.maxOrNull() ?: 1).toFloat()
+
+    // Round maxY to nearest 10 for clean axis
+    val rawMax = (values.maxOrNull() ?: 1).toFloat()
+    val maxY = if (rawMax <= 10) 10f else ((rawMax / 10).roundToInt() * 10).toFloat()
 
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
 
@@ -99,9 +89,12 @@ fun DailyUsageLineChart(
                         Canvas(Modifier.matchParentSize()) {
                             val xStep = size.width / (days.size - 1).coerceAtLeast(1)
                             val yRatio = size.height / maxY
+                            val step = (maxY / 4).coerceAtLeast(1f)
 
+                            // Grid lines
                             for (i in 0..4) {
-                                val y = size.height - (i * size.height / 4f) // evenly divide height
+                                val value = i * step
+                                val y = size.height - (value * yRatio)
                                 drawLine(
                                     color = gridColor,
                                     start = Offset(0f, y),
@@ -110,6 +103,7 @@ fun DailyUsageLineChart(
                                 )
                             }
 
+                            // Line path
                             val path = Path()
                             values.forEachIndexed { index, value ->
                                 val x = index * xStep
@@ -118,6 +112,7 @@ fun DailyUsageLineChart(
                             }
                             drawPath(path, color = lineColor, style = Stroke(width = 4f))
 
+                            // Points + labels
                             values.forEachIndexed { index, value ->
                                 val x = index * xStep
                                 val y = size.height - (value * yRatio)

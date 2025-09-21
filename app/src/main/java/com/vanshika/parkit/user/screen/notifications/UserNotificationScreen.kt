@@ -49,8 +49,7 @@ fun UserNotificationScreen(
             NotificationCard(
                 notification = notification,
                 onClick = {
-                    // Optional: handle mark as read or navigate
-                    // Example: viewModel.markAsRead(notification.id)
+                    viewModel.markAsRead(notification.id)
                 }
             )
         }
@@ -62,20 +61,22 @@ fun NotificationCard(
     notification: NotificationDataClass,
     onClick: () -> Unit
 ) {
-    val backgroundColor =
-        if (notification.isRead)
-            MaterialTheme.colorScheme.surface
-        else
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-
     val context = LocalContext.current
 
     val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
 
     val cardColor = if (isDarkTheme) {
-        Color(0xFF1565C0) // darker blue for dark theme
+        if (notification.isRead) {
+            Color(0xFF0D47A1)
+        } else {
+            Color(0xFF08306B)
+        }
     } else {
-        Color(0xFFD0E8FF) // light blue for light theme
+        if (notification.isRead) {
+            Color(0xFFBBDEFB)
+        } else {
+            Color(0xFF64B5F6)
+        }
     }
 
     Card(
@@ -96,12 +97,6 @@ fun NotificationCard(
                 text = notification.message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Type: ${notification.type}",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.outline
             )
         }
     }

@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,6 +44,7 @@ import com.vanshika.parkit.admin.screen.home.HorizontalPillar
 import com.vanshika.parkit.admin.screen.home.ParkingSlotData
 import com.vanshika.parkit.admin.screen.home.SlotStatus
 import com.vanshika.parkit.admin.viewmodel.BookingViewModel
+import com.vanshika.parkit.ui.theme.ThemePreference
 import com.vanshika.parkit.user.navigation.UserNavRoutes
 
 @Composable
@@ -50,6 +53,9 @@ fun UserParkingLotScreen(
     viewModel: BookingViewModel = hiltViewModel()
 ) {
     val slotsMap = viewModel.slotsMap
+
+    val context = LocalContext.current
+    val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
 
     Column(
         modifier = Modifier
@@ -110,7 +116,7 @@ fun UserParkingLotScreen(
             ) {
                 Text(
                     text = "Path",
-                    color = MaterialTheme.colorScheme.onSecondary,
+                    color = MaterialTheme.colorScheme.primary,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(8.dp)
                 )
@@ -133,6 +139,7 @@ fun UserParkingLotScreen(
                 ) {
                     Text(
                         text = "Reserved Area",
+                        color = MaterialTheme.colorScheme.primary,
                         fontSize = 16.sp
                     )
                 }
@@ -148,6 +155,7 @@ fun UserParkingLotScreen(
                 ) {
                     Text(
                         text = "Pillar",
+                        color = MaterialTheme.colorScheme.primary,
                         fontSize = 12.sp
                     )
                 }
@@ -158,13 +166,15 @@ fun UserParkingLotScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(450.dp)
-                        .background(Color(0xFFC8E6C9)),
+                        .background(
+                            color = if (isDarkTheme) Color(0xFFA5D6A7) else Color(0xFFC8E6C9)
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "Space for Parking",
                         fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -222,16 +232,19 @@ fun UserParkingSlot(
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
+
     Box(
         modifier = Modifier
             .size(width = 35.dp, height = 36.dp)
             .border(1.dp, MaterialTheme.colorScheme.onSurface)
             .background(
                 when (slotData.status.value) {
-                    SlotStatus.RESERVED -> Color.Red
-                    SlotStatus.AVAILABLE -> Color(0xFFC8E6C9)
-                    SlotStatus.BOOKED -> Color.Yellow
-                    SlotStatus.MAINTENANCE -> Color.Gray
+                    SlotStatus.RESERVED -> Color.Red        // fixed
+                    SlotStatus.AVAILABLE -> if (isDarkTheme) Color(0xFFA5D6A7) else Color(0xFFC8E6C9)
+                    SlotStatus.BOOKED -> if (isDarkTheme) Color(0xFFFFCC80) else Color.Yellow     // fixed
+                    SlotStatus.MAINTENANCE -> Color.Gray    // fixed
                 }
             )
             .onGloballyPositioned { cords ->
@@ -245,7 +258,7 @@ fun UserParkingSlot(
         Text(
             text = slotData.id,
             fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.primary
         )
     }
 

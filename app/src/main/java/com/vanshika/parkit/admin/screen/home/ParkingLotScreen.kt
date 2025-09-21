@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +41,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.vanshika.parkit.admin.navigation.NavRoutes
 import com.vanshika.parkit.admin.viewmodel.BookingViewModel
+import com.vanshika.parkit.ui.theme.ThemePreference
 
 data class ParkingSlotData(
     val id: String,
@@ -53,6 +55,9 @@ fun ParkingLotLayout(
     viewModel: BookingViewModel = hiltViewModel()
 ) {
     val slotsMap = viewModel.slotsMap
+
+    val context = LocalContext.current
+    val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
 
     Column(
         modifier = Modifier
@@ -113,7 +118,7 @@ fun ParkingLotLayout(
             ) {
                 Text(
                     text = "Path",
-                    color = MaterialTheme.colorScheme.onSecondary,
+                    color = MaterialTheme.colorScheme.primary,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(8.dp)
                 )
@@ -136,6 +141,7 @@ fun ParkingLotLayout(
                 ) {
                     Text(
                         text = "Reserved Area",
+                        color = MaterialTheme.colorScheme.primary,
                         fontSize = 16.sp
                     )
                 }
@@ -151,6 +157,7 @@ fun ParkingLotLayout(
                 ) {
                     Text(
                         text = "Pillar",
+                        color = MaterialTheme.colorScheme.primary,
                         fontSize = 12.sp
                     )
                 }
@@ -161,13 +168,15 @@ fun ParkingLotLayout(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(450.dp)
-                        .background(Color(0xFFC8E6C9)),
+                        .background(
+                            color = if (isDarkTheme) Color(0xFFA5D6A7) else Color(0xFFC8E6C9)
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "Space for Parking",
                         fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -231,6 +240,9 @@ fun ParkingSlot(
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
+
     Box(
         modifier = Modifier
             .size(width = 35.dp, height = 36.dp)
@@ -238,8 +250,8 @@ fun ParkingSlot(
             .background(
                 when (slotData.status.value) {
                     SlotStatus.RESERVED -> Color.Red        // fixed
-                    SlotStatus.AVAILABLE -> Color(0xFFC8E6C9) // fixed green
-                    SlotStatus.BOOKED -> Color.Yellow       // fixed
+                    SlotStatus.AVAILABLE -> if (isDarkTheme) Color(0xFFA5D6A7) else Color(0xFFC8E6C9)
+                    SlotStatus.BOOKED -> if (isDarkTheme) Color(0xFFFFCC80) else Color.Yellow     // fixed
                     SlotStatus.MAINTENANCE -> Color.Gray    // fixed
                 }
             )
@@ -249,7 +261,7 @@ fun ParkingSlot(
         Text(
             text = slotData.id,
             fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.primary
         )
     }
 
@@ -436,10 +448,10 @@ fun ReservedSlotDialog(
             Column {
                 TextButton(onClick = {
                     navController.navigate(
-                        NavRoutes.UpdateBookings.createRoute(
+                        NavRoutes.UpdateReserveBookings.createRoute(
                             slotData.id,
                             slotData.zoneName,
-                            SlotStatus.BOOKED // original status
+                            SlotStatus.RESERVED // original status
                         )
                     )
                     onDismiss()

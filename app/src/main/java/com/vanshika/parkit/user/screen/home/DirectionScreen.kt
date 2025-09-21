@@ -177,19 +177,6 @@ fun UserParkingLotSection(
     }
 }
 
-///** * Generate path: entrance → middle lane → slot */
-//fun generatePath(entry: Offset, slot: Offset, middleX: Float): List<Offset> {
-//    val path = mutableListOf<Offset>()
-//    path.add(entry)
-//    if (slot != Offset.Zero) {
-//        // Step 1: go down central lane until slot’s Y
-//        path.add(Offset(middleX, slot.y))
-//        // Step 2: turn left/right into slot
-//        path.add(slot)
-//    }
-//    return path
-//}
-
 /** Generate path: entrance → middle lane → zone row → slot */
 fun generatePath(entry: Offset, slot: Offset, middleX: Float): List<Offset> {
     val path = mutableListOf<Offset>()
@@ -207,21 +194,6 @@ fun generatePath(entry: Offset, slot: Offset, middleX: Float): List<Offset> {
     return path
 }
 
-///** * Generate textual driving instructions */
-//fun generateInstructions(path: List<Offset>): String {
-//    val instructions = mutableListOf<String>()
-//    if (path.size > 1 && path[1].y > path[0].y) {
-//        instructions.add("Go straight down the middle lane.")
-//    }
-//    if (path.size > 2) {
-//        val dx = path[2].x - path[1].x
-//        when {
-//            dx > 0 -> instructions.add("Turn right towards your slot.")
-//            dx < 0 -> instructions.add("Turn left towards your slot.")
-//        }
-//    }
-//    return instructions.joinToString(" ")
-//}
 /** Generate textual driving instructions */
 fun generateInstructions(path: List<Offset>): String {
     val instructions = mutableListOf<String>()

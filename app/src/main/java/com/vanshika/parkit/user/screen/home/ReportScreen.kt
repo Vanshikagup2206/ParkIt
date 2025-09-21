@@ -79,6 +79,7 @@ fun ReportScreen(
                             reportedBy = userId
                         )
                         viewModel.addIssue(newIssue)
+                        viewModel.notifyAdmin(newIssue)
                         onNavigationUp()
                     },
                     modifier = Modifier
@@ -187,6 +188,7 @@ fun ReportScreen(
                                 reportedBy = userId
                             )
                             viewModel.addIssue(newIssue)
+                            viewModel.notifyAdmin(newIssue)
                             customIssue = ""
                             coroutineScope.launch { sheetState.hide() }
                             showBottomSheet = false

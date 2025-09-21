@@ -72,9 +72,11 @@ fun AdminIssuesScreen(
             if (sortOption == "Latest First") list.reversed() else list
         }
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         // 🔹 Filter Row
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -176,7 +178,10 @@ fun IssueCard(
                 Text("Reported by: ${issue.reportedBy}", style = MaterialTheme.typography.bodySmall)
 
                 // Convert timestamp to a readable date
-                val formattedDate = SimpleDateFormat("MMM dd, yyyy - hh:mm a", Locale.getDefault()).format(Date(issue.reportedAt))
+                val formattedDate =
+                    SimpleDateFormat("MMM dd, yyyy - hh:mm a", Locale.getDefault()).format(
+                        Date(issue.reportedAt)
+                    )
                 Text("Date: $formattedDate", style = MaterialTheme.typography.bodySmall)
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -193,10 +198,10 @@ fun IssueCard(
 @Composable
 fun StatusChip(status: String) {
     val (bgColor, textColor) = when (status) {
-        "Pending" -> Color(0xFF1A132F) to Color.Black
-        "In Progress" -> Color(0xFF113547) to Color.Black
-        "Resolved" -> Color(0xFF0A313D) to Color.Black
-        else -> Color(0xFFB0BEC5) to Color.Black
+        "Pending" -> Color(0xFFFFCC80) to Color(0xFF424242)      // Soft orange, dark text
+        "In Progress" -> Color(0xFFFF8A65) to Color.White       // Coral/red-orange, white text
+        "Resolved" -> Color(0xFF81C784) to Color.White          // Soft green, white text
+        else -> Color(0xFFB0BEC5) to Color(0xFF424242)          // Neutral gray, dark text
     }
 
     Box(
@@ -216,15 +221,28 @@ fun SortDropdown(
     sortOptions: List<String>
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
 
     Box {
         IconButton(onClick = { expanded = true }) {
             Icon(Icons.Default.MoreVert, contentDescription = "Sort Options")
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(
+                color = if (isDarkTheme) Color.Black else Color.White
+            )
+        ) {
             sortOptions.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option) },
+                    text = {
+                        Text(
+                            text = option,
+                            color = if (isDarkTheme) Color.White else Color.Black
+                        )
+                    },
                     onClick = {
                         onSortChange(option)
                         expanded = false

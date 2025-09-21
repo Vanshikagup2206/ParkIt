@@ -37,7 +37,7 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReserveBookingPage(
+fun UpdateReserveBookings(
     slotId: String = "",
     zoneName: String = "",
     originalStatus: SlotStatus,
@@ -47,7 +47,6 @@ fun ReserveBookingPage(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    // Form fields
     var vehicleNo by remember { mutableStateOf("") }
     var vehicleType by remember { mutableStateOf("") }
     var userId by remember { mutableStateOf("") }
@@ -59,7 +58,6 @@ fun ReserveBookingPage(
     var startTimePicked by remember { mutableStateOf("") }
     var endTimePicked by remember { mutableStateOf("") }
 
-    // Error states
     var vehicleNoError by remember { mutableStateOf("") }
     var vehicleTypeError by remember { mutableStateOf("") }
     var userIdError by remember { mutableStateOf("") }
@@ -71,7 +69,6 @@ fun ReserveBookingPage(
     var startTimeError by remember { mutableStateOf("") }
     var endTimeError by remember { mutableStateOf("") }
 
-    // Dropdowns
     val priorityOptions = listOf("Normal", "Staff", "Student")
     var priorityExpanded by remember { mutableStateOf(false) }
 
@@ -80,18 +77,40 @@ fun ReserveBookingPage(
 
     val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
 
-    val currentBooking = remember { mutableStateOf<BookingDetailsDataClass?>(null) }
     val allBookings by viewModel.allBookings
+    val currentBooking = remember { mutableStateOf<BookingDetailsDataClass?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.loadAllBookings()
     }
 
-    // Suggestions for autocomplete
+    // Prefill the form for this booking
+    LaunchedEffect(allBookings) {
+        val existing = allBookings.find { it.slotId == slotId }
+        existing?.let {
+            vehicleNo = it.vehicleNumber.orEmpty()
+            vehicleType = it.vehicleType
+            userId = it.customUserId
+            username = it.userName
+            contactNo = it.contactNo
+            priorityTag = it.priorityTag
+
+            datePicked = it.date?.toDate()?.let { d -> dateFormatter.format(d) } ?: ""
+            startTimePicked =
+                it.bookingStartTime?.toDate()?.let { d -> timeFormatter.format(d) } ?: ""
+            endTimePicked =
+                it.bookingEndTime?.toDate()?.let { d -> timeFormatter.format(d) } ?: ""
+
+            currentBooking.value = it
+        }
+    }
+
     val vehicleNoSuggestions by remember(vehicleNo, allBookings) {
         derivedStateOf {
             if (vehicleNo.isBlank()) emptyList()
-            else allBookings.mapNotNull { it.vehicleNumber }.distinct()
+            else allBookings
+                .mapNotNull { it -> it.vehicleNumber?.takeIf { it.isNotBlank() } }
+                .distinct()
                 .filter { it.contains(vehicleNo, ignoreCase = true) }
         }
     }
@@ -99,22 +118,23 @@ fun ReserveBookingPage(
 
     val userIdSuggestions by remember(userId, allBookings) {
         derivedStateOf {
-            allBookings.filter {
-                it.customUserId.contains(
-                    userId,
-                    ignoreCase = true
-                )
-            }
+            if (userId.isBlank()) emptyList()
+            else allBookings
+                .filter { it.customUserId.contains(userId, ignoreCase = true) }
         }
     }
     var userIdExpanded by remember { mutableStateOf(false) }
 
     val usernameSuggestions by remember(username, allBookings) {
-        derivedStateOf { allBookings.filter { it.userName.contains(username, ignoreCase = true) } }
+        derivedStateOf {
+            if (username.isBlank()) emptyList()
+            else allBookings
+                .filter { it.userName.contains(username, ignoreCase = true) }
+        }
     }
     var usernameExpanded by remember { mutableStateOf(false) }
 
-    // Speech-to-Text setup
+    // Speech-to-Text Setup
     var activeField by remember { mutableStateOf<String?>(null) }
     val speechLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -156,7 +176,7 @@ fun ReserveBookingPage(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Reserve Booking",
+            text = "Update Booking",
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
             modifier = Modifier.padding(bottom = 16.dp)
         )
@@ -164,14 +184,15 @@ fun ReserveBookingPage(
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(0.dp),
-            colors = CardDefaults.cardColors(containerColor = if (isDarkTheme) Color.Black else Color.White)
+            colors = CardDefaults.cardColors(
+                containerColor = if (isDarkTheme) Color.Black else Color.White
+            )
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-
-                // Vehicle Number
+                /*** Vehicle Number with suggestions ***/
                 ExposedDropdownMenuBox(
                     expanded = vehicleNoExpanded && vehicleNoSuggestions.isNotEmpty(),
                     onExpandedChange = { vehicleNoExpanded = !vehicleNoExpanded }
@@ -179,16 +200,18 @@ fun ReserveBookingPage(
                     OutlinedTextField(
                         value = vehicleNo,
                         onValueChange = {
-                            vehicleNo = it; vehicleNoError = ""; vehicleNoExpanded = true
+                            vehicleNo = it
+                            vehicleNoError = ""
+                            vehicleNoExpanded = true
                         },
                         label = { Text("Vehicle Number") },
-                        placeholder = { Text("e.g. MH12AB1234") },
                         isError = vehicleNoError.isNotEmpty(),
+                        placeholder = { Text("e.g. MH12AB1234") },
                         trailingIcon = {
                             IconButton(onClick = { startListeningFor("vehicleNo") }) {
                                 Icon(
                                     painterResource(id = R.drawable.baseline_mic_24),
-                                    contentDescription = null
+                                    contentDescription = "Speak Vehicle Number"
                                 )
                             }
                         },
@@ -230,20 +253,22 @@ fun ReserveBookingPage(
                 // Vehicle Type
                 OutlinedTextField(
                     value = vehicleType,
-                    onValueChange = { vehicleType = it; vehicleTypeError = "" },
+                    onValueChange = {
+                        vehicleType = it
+                        vehicleTypeError = ""
+                    },
                     label = { Text("Vehicle Type") },
-                    placeholder = { Text("Car, Bike, etc.") },
                     isError = vehicleTypeError.isNotEmpty(),
                     trailingIcon = {
                         IconButton(onClick = { startListeningFor("vehicleType") }) {
                             Icon(
                                 painterResource(id = R.drawable.baseline_mic_24),
-                                contentDescription = null
+                                contentDescription = "Speak Vehicle Type"
                             )
                         }
                     },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
                     singleLine = true,
+                    placeholder = { Text("Car, Bike, etc.") },
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -254,19 +279,23 @@ fun ReserveBookingPage(
                 ) {
                     OutlinedTextField(
                         value = userId,
-                        onValueChange = { userId = it; userIdError = ""; userIdExpanded = true },
+                        onValueChange = {
+                            userId = it
+                            userIdError = ""
+                            userIdExpanded = true
+                        },
                         label = { Text("User ID") },
-                        placeholder = { Text("Enter User ID") },
                         isError = userIdError.isNotEmpty(),
                         trailingIcon = {
                             IconButton(onClick = { startListeningFor("userId") }) {
                                 Icon(
                                     painterResource(id = R.drawable.baseline_mic_24),
-                                    contentDescription = null
+                                    contentDescription = "Speak User Id"
                                 )
                             }
                         },
                         singleLine = true,
+                        placeholder = { Text("Enter User ID") },
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth()
@@ -308,20 +337,22 @@ fun ReserveBookingPage(
                     OutlinedTextField(
                         value = username,
                         onValueChange = {
-                            username = it; usernameError = ""; usernameExpanded = true
+                            username = it
+                            usernameError = ""
+                            usernameExpanded = true
                         },
                         label = { Text("Username") },
-                        placeholder = { Text("Enter Customer Name") },
                         isError = usernameError.isNotEmpty(),
                         trailingIcon = {
                             IconButton(onClick = { startListeningFor("username") }) {
                                 Icon(
                                     painterResource(id = R.drawable.baseline_mic_24),
-                                    contentDescription = null
+                                    contentDescription = "Speak Username"
                                 )
                             }
                         },
                         singleLine = true,
+                        placeholder = { Text("Enter Customer Name") },
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth()
@@ -355,7 +386,7 @@ fun ReserveBookingPage(
                     }
                 }
 
-                // Slot & Zone
+                // Slot ID
                 OutlinedTextField(
                     value = slotId,
                     onValueChange = {},
@@ -364,6 +395,8 @@ fun ReserveBookingPage(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                // Zone Name
                 OutlinedTextField(
                     value = zoneName,
                     onValueChange = {},
@@ -376,21 +409,23 @@ fun ReserveBookingPage(
                 // Contact Number
                 OutlinedTextField(
                     value = contactNo,
-                    onValueChange = { contactNo = it; contactNoError = "" },
+                    onValueChange = {
+                        contactNo = it
+                        contactNoError = ""
+                    },
                     label = { Text("Contact Number") },
                     isError = contactNoError.isNotEmpty(),
-                    supportingText = {
-                        if (contactNoError.isNotEmpty()) Text(
-                            contactNoError,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    },
                     trailingIcon = {
                         IconButton(onClick = { startListeningFor("contactNo") }) {
                             Icon(
                                 painterResource(id = R.drawable.baseline_mic_24),
-                                contentDescription = null
+                                contentDescription = "Speak Contact Number"
                             )
+                        }
+                    },
+                    supportingText = {
+                        if (contactNoError.isNotEmpty()) {
+                            Text(text = contactNoError, color = MaterialTheme.colorScheme.error)
                         }
                     },
                     keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
@@ -399,7 +434,7 @@ fun ReserveBookingPage(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // Priority
+                // Priority Tag
                 ExposedDropdownMenuBox(
                     expanded = priorityExpanded,
                     onExpandedChange = { priorityExpanded = !priorityExpanded }
@@ -410,12 +445,17 @@ fun ReserveBookingPage(
                         readOnly = true,
                         label = { Text("Priority Tag") },
                         isError = priorityTagError.isNotEmpty(),
+                        supportingText = {
+                            if (priorityTagError.isNotEmpty()) {
+                                Text(
+                                    text = priorityTagError,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        },
                         placeholder = { Text("Select Priority") },
                         trailingIcon = {
-                            Icon(
-                                Icons.Default.ArrowDropDown,
-                                contentDescription = null
-                            )
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                         },
                         modifier = Modifier
                             .menuAnchor()
@@ -451,9 +491,9 @@ fun ReserveBookingPage(
                         val calendar = Calendar.getInstance()
                         DatePickerDialog(
                             context,
-                            { _, y, m, d ->
+                            { _, year, month, dayOfMonth ->
                                 val cal = Calendar.getInstance()
-                                cal.set(y, m, d)
+                                cal.set(year, month, dayOfMonth)
                                 datePicked = dateFormatter.format(cal.time)
                                 dateError = ""
                             },
@@ -463,69 +503,87 @@ fun ReserveBookingPage(
                         ).show()
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
                     border = ButtonDefaults.outlinedButtonBorder.copy(
-                        brush = if (dateError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error) else SolidColor(
-                            MaterialTheme.colorScheme.outline
-                        )
+                        brush = if (dateError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error)
+                        else SolidColor(MaterialTheme.colorScheme.outline)
                     )
-                ) { Text(if (datePicked.isEmpty()) "Select Date" else "Date: $datePicked") }
-                if (dateError.isNotEmpty()) Text(dateError, color = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(if (datePicked.isEmpty()) "Select Date" else "Date: $datePicked")
+                }
 
-                // Time Pickers
+                if (dateError.isNotEmpty()) {
+                    Text(
+                        text = dateError,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                // Time pickers
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedButton(
                         onClick = {
-                            val cal = Calendar.getInstance()
+                            val calendar = Calendar.getInstance()
                             TimePickerDialog(
                                 context,
-                                { _, h, m ->
-                                    cal.set(Calendar.HOUR_OF_DAY, h)
-                                    cal.set(Calendar.MINUTE, m)
+                                { _, hourOfDay, minute ->
+                                    val cal = Calendar.getInstance()
+                                    cal.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                                    cal.set(Calendar.MINUTE, minute)
                                     startTimePicked = timeFormatter.format(cal.time)
                                     startTimeError = ""
                                 },
-                                cal.get(Calendar.HOUR_OF_DAY),
-                                cal.get(Calendar.MINUTE),
+                                calendar.get(Calendar.HOUR_OF_DAY),
+                                calendar.get(Calendar.MINUTE),
                                 false
                             ).show()
                         },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
                         border = ButtonDefaults.outlinedButtonBorder.copy(
-                            brush = if (startTimeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error) else SolidColor(
-                                MaterialTheme.colorScheme.outline
-                            )
+                            brush = if (startTimeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error)
+                            else SolidColor(MaterialTheme.colorScheme.outline)
                         )
-                    ) { Text(if (startTimePicked.isEmpty()) "Start Time" else "Time: $startTimePicked") }
+                    ) {
+                        Text(if (startTimePicked.isEmpty()) "Start Time" else "Time: $startTimePicked")
+                    }
 
                     OutlinedButton(
                         onClick = {
-                            val cal = Calendar.getInstance()
+                            val calendar = Calendar.getInstance()
                             TimePickerDialog(
                                 context,
-                                { _, h, m ->
-                                    cal.set(Calendar.HOUR_OF_DAY, h)
-                                    cal.set(Calendar.MINUTE, m)
+                                { _, hourOfDay, minute ->
+                                    val cal = Calendar.getInstance()
+                                    cal.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                                    cal.set(Calendar.MINUTE, minute)
                                     endTimePicked = timeFormatter.format(cal.time)
                                     endTimeError = ""
                                 },
-                                cal.get(Calendar.HOUR_OF_DAY),
-                                cal.get(Calendar.MINUTE),
+                                calendar.get(Calendar.HOUR_OF_DAY),
+                                calendar.get(Calendar.MINUTE),
                                 false
                             ).show()
                         },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
                         border = ButtonDefaults.outlinedButtonBorder.copy(
-                            brush = if (endTimeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error) else SolidColor(
-                                MaterialTheme.colorScheme.outline
-                            )
+                            brush = if (endTimeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error)
+                            else SolidColor(MaterialTheme.colorScheme.outline)
                         )
-                    ) { Text(if (endTimePicked.isEmpty()) "End Time" else "Time: $endTimePicked") }
+                    ) {
+                        Text(if (endTimePicked.isEmpty()) "End Time" else "Time: $endTimePicked")
+                    }
                 }
 
                 // Confirm & Cancel
@@ -535,73 +593,69 @@ fun ReserveBookingPage(
                 ) {
                     OutlinedButton(
                         onClick = {
-                            currentBooking.value?.let {
-                                viewModel.deleteBookings(it.slotId)
-                            }
-                            viewModel.updateSlotStatus(slotId, SlotStatus.AVAILABLE)
-                            vehicleNo = ""
-                            vehicleType = ""
-                            userId = ""
-                            username = ""
-                            contactNo = ""
-                            priorityTag = ""
-                            datePicked = ""
-                            startTimePicked = ""
-                            endTimePicked = ""
-                            Toast.makeText(context, "Booking Cancelled", Toast.LENGTH_SHORT).show()
                             onNavigateUp()
                         },
                         modifier = Modifier.weight(1f)
                     ) { Text("Cancel") }
 
-                    Button(onClick = {
-                        when {
-                            vehicleNo.isBlank() -> vehicleNoError = "Enter vehicle no."
-                            vehicleType.isBlank() -> vehicleTypeError = "Enter vehicle type"
-                            userId.isBlank() -> userIdError = "Enter user ID"
-                            username.isBlank() -> usernameError = "Enter username"
-                            contactNo.isBlank() -> contactNoError = "Enter contact no."
-                            contactNo.length < 10 -> contactNoError = "Enter valid mobile no"
-                            datePicked.isBlank() -> dateError = "Select date"
-                            startTimePicked.isBlank() -> startTimeError = "Select start time"
-                            endTimePicked.isBlank() -> endTimeError = "Select end time"
-                            priorityTag.isBlank() -> priorityTagError = "Select one"
-                            else -> {
-                                val dateTimeFormat =
-                                    SimpleDateFormat("dd MMM yyyy hh:mm a", Locale.getDefault())
-                                val dayFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+                    Button(
+                        onClick = {
+                            when {
+                                vehicleNo.isBlank() -> vehicleNoError = "Enter vehicle no."
+                                vehicleType.isBlank() -> vehicleTypeError = "Enter vehicle type"
+                                userId.isBlank() -> userIdError = "Enter user ID"
+                                username.isBlank() -> usernameError = "Enter username"
+                                contactNo.isBlank() -> contactNoError = "Enter contact no."
+                                contactNo.length < 10 -> contactNoError = "Enter valid mobile no"
+                                datePicked.isBlank() -> dateError = "Select date"
+                                startTimePicked.isBlank() -> startTimeError = "Select start time"
+                                endTimePicked.isBlank() -> endTimeError = "Select end time"
+                                priorityTag.isBlank() -> priorityTagError = "Select one"
+                                else -> {
+                                    val dateTimeFormat =
+                                        SimpleDateFormat("dd MMM yyyy hh:mm a", Locale.getDefault())
+                                    val dayFormat =
+                                        SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
 
-                                val bookingDate = Timestamp(dayFormat.parse(datePicked)!!)
-                                val bookingStartTime =
-                                    Timestamp(dateTimeFormat.parse("$datePicked $startTimePicked")!!)
-                                val bookingEndTime =
-                                    Timestamp(dateTimeFormat.parse("$datePicked $endTimePicked")!!)
+                                    val bookingDate = Timestamp(dayFormat.parse(datePicked)!!)
+                                    val bookingStartTime =
+                                        Timestamp(dateTimeFormat.parse("$datePicked $startTimePicked")!!)
+                                    val bookingEndTime =
+                                        Timestamp(dateTimeFormat.parse("$datePicked $endTimePicked")!!)
 
-                                val booking = BookingDetailsDataClass(
-                                    bookedBy = username,
-                                    vehicleNumber = vehicleNo,
-                                    vehicleType = vehicleType,
-                                    customUserId = userId,
-                                    userName = username,
-                                    slotId = slotId,
-                                    zone = zoneName,
-                                    date = bookingDate,
-                                    status = SlotStatus.RESERVED,
-                                    bookingStartTime = bookingStartTime,
-                                    bookingEndTime = bookingEndTime,
-                                    contactNo = contactNo,
-                                    priorityTag = priorityTag
-                                )
+                                    val booking = BookingDetailsDataClass(
+                                        bookedBy = username,
+                                        vehicleNumber = vehicleNo,
+                                        vehicleType = vehicleType,
+                                        customUserId = userId,
+                                        userName = username,
+                                        slotId = slotId,
+                                        zone = zoneName,
+                                        date = bookingDate,
+                                        status = SlotStatus.RESERVED,
+                                        bookingStartTime = bookingStartTime,
+                                        bookingEndTime = bookingEndTime,
+                                        contactNo = contactNo,
+                                        priorityTag = priorityTag
+                                    )
 
-                                viewModel.addBooking(booking)
-                                viewModel.updateSlotStatus(slotId, SlotStatus.RESERVED)
+                                    viewModel.updateBooking(booking)
+                                    viewModel.addBookingHistory(booking)
+                                    viewModel.updateSlotStatus(slotId, SlotStatus.RESERVED)
 
-                                Toast.makeText(context, "Booking reserved!", Toast.LENGTH_SHORT)
-                                    .show()
-                                onNavigateUp()
+                                    Toast.makeText(
+                                        context,
+                                        "Booking updated!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    onNavigateUp()
+                                }
                             }
-                        }
-                    }, modifier = Modifier.weight(1f)) { Text("Confirm Booking") }
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Confirm Booking")
+                    }
                 }
             }
         }

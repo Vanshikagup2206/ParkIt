@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -23,6 +24,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.firebase.Timestamp
@@ -64,7 +66,8 @@ fun BookingPage(
     var priorityTagError by remember { mutableStateOf("") }
 
     var dateError by remember { mutableStateOf("") }
-    var timeError by remember { mutableStateOf("") }
+    var startTimeError by remember { mutableStateOf("") }
+    var endTimeError by remember { mutableStateOf("") }
 
     val priorityOptions = listOf("Normal", "Staff", "Student")
     var priorityExpanded by remember { mutableStateOf(false) }
@@ -405,6 +408,7 @@ fun BookingPage(
                             Text(text = contactNoError, color = MaterialTheme.colorScheme.error)
                         }
                     },
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     placeholder = { Text("Enter Phone Number") },
                     modifier = Modifier.fillMaxWidth()
@@ -513,7 +517,7 @@ fun BookingPage(
                                     cal.set(Calendar.HOUR_OF_DAY, hourOfDay)
                                     cal.set(Calendar.MINUTE, minute)
                                     startTimePicked = timeFormatter.format(cal.time)
-                                    timeError = ""
+                                    startTimeError = ""
                                 },
                                 calendar.get(Calendar.HOUR_OF_DAY),
                                 calendar.get(Calendar.MINUTE),
@@ -525,7 +529,7 @@ fun BookingPage(
                             containerColor = MaterialTheme.colorScheme.surface
                         ),
                         border = ButtonDefaults.outlinedButtonBorder.copy(
-                            brush = if (timeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error)
+                            brush = if (startTimeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error)
                             else SolidColor(MaterialTheme.colorScheme.outline)
                         )
                     ) {
@@ -542,7 +546,7 @@ fun BookingPage(
                                     cal.set(Calendar.HOUR_OF_DAY, hourOfDay)
                                     cal.set(Calendar.MINUTE, minute)
                                     endTimePicked = timeFormatter.format(cal.time)
-                                    timeError = ""
+                                    endTimeError = ""
                                 },
                                 calendar.get(Calendar.HOUR_OF_DAY),
                                 calendar.get(Calendar.MINUTE),
@@ -554,7 +558,7 @@ fun BookingPage(
                             containerColor = MaterialTheme.colorScheme.surface
                         ),
                         border = ButtonDefaults.outlinedButtonBorder.copy(
-                            brush = if (timeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error)
+                            brush = if (endTimeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error)
                             else SolidColor(MaterialTheme.colorScheme.outline)
                         )
                     ) {
@@ -598,8 +602,8 @@ fun BookingPage(
                                 contactNo.isBlank() -> contactNoError = "Enter contact no."
                                 contactNo.length < 10 -> contactNoError = "Enter valid mobile no"
                                 datePicked.isBlank() -> dateError = "Select date"
-                                startTimePicked.isBlank() -> timeError = "Select start time"
-                                endTimePicked.isBlank() -> timeError = "Select end time"
+                                startTimePicked.isBlank() -> startTimeError = "Select start time"
+                                endTimePicked.isBlank() -> endTimeError = "Select end time"
                                 priorityTag.isBlank() -> priorityTagError = "Select one"
                                 else -> {
                                     val dateTimeFormat =

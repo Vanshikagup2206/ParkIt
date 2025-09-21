@@ -4,6 +4,7 @@ plugins {
     id("org.jetbrains.kotlin.kapt")
     id 'com.google.gms.google-services'
     id("dagger.hilt.android.plugin")
+    id 'com.onesignal.androidsdk.onesignal-gradle-plugin'
 }
 
 android {
@@ -21,6 +22,10 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
+        manifestPlaceholders = [
+                onesignal_app_id: "531eda43-b91a-4e09-b931-0bd569b034e9",
+                onesignal_google_project_number: "REMOTE"
+        ]
     }
 
     buildTypes {
@@ -106,4 +111,6 @@ dependencies {
     implementation "androidx.datastore:datastore-preferences:1.1.1"
 
     implementation "androidx.work:work-runtime-ktx:2.9.0"
+
+    implementation 'com.onesignal:OneSignal:5.1.36'
 }
