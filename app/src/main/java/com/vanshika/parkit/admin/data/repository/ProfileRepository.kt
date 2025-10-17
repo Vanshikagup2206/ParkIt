@@ -21,7 +21,7 @@ class UserRepository(
 ) {
     private val cloudinary = Cloudinary(
         mapOf(
-            "cloud_name" to "diey61vc3", // 🔹 replace with your cloud name
+            "cloud_name" to "diey61vc3",
             "api_key" to "554239114899574",
             "api_secret" to "xZlLAAnfKGUyHZuT9-I7txXPhhE"
         )
