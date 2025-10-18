@@ -1,9 +1,11 @@
 package com.vanshika.parkit.admin.di
 
+import android.content.Context
 import com.vanshika.parkit.admin.data.repository.BookingRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -12,7 +14,9 @@ import javax.inject.Singleton
 object FirebaseModule {
     @Provides
     @Singleton
-    fun provideBookingRepository(): BookingRepository {
-        return BookingRepository()
+    fun provideBookingRepository(
+        @ApplicationContext context: Context
+    ): BookingRepository {
+        return BookingRepository(context)
     }
 }
