@@ -5,17 +5,17 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
 import com.vanshika.parkit.admin.data.model.NotificationDataClass
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 class UserNotificationViewModel : ViewModel() {
+
     private val firestore = FirebaseFirestore.getInstance()
 
     private val _notifications = MutableStateFlow<List<NotificationDataClass>>(emptyList())
     val notifications: StateFlow<List<NotificationDataClass>> = _notifications
-
-    private val _unreadCount = MutableStateFlow(0)
-    val unreadCount: StateFlow<Int> = _unreadCount
 
     fun observeUserNotifications(userId: String) {
         firestore.collection("notifications")
@@ -24,17 +24,36 @@ class UserNotificationViewModel : ViewModel() {
                     doc.toObject(NotificationDataClass::class.java)?.copy(id = doc.id)
                 } ?: emptyList()
 
-                val userNotifications = allNotifications.filter { it.userId == userId || it.userId == null }
+                val userNotifications = allNotifications
+                    .filter { it.userId == userId || it.userId == null }
                     .sortedByDescending { it.timestamp }
+                    .map { notification ->
+                        notification
+                    }
 
                 _notifications.value = userNotifications
-                _unreadCount.value = userNotifications.count { !it.isRead }
             }
     }
 
-    fun markAsRead(notificationId: String) {
-        firestore.collection("notifications")
-            .document(notificationId)
-            .update("isRead", true)
+    val unreadCount: StateFlow<Int> = _notifications
+        .map { list ->
+            list.count { !it.isRead }
+        }
+        .stateIn(viewModelScope, SharingStarted.Lazily, 0)
+
+    fun markAllAsRead() {
+        val currentNotifications = _notifications.value
+
+        // Optimistic local update
+        _notifications.value = currentNotifications.map { it.copy(isRead = true) }
+
+        // Fire store update in background
+        currentNotifications.forEach { notification ->
+            if (!notification.isRead) {
+                firestore.collection("notifications")
+                    .document(notification.id)
+                    .update("isRead", true)
+            }
+        }
     }
 }
