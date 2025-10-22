@@ -6,48 +6,22 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -74,7 +48,6 @@ fun AdminProfileScreen(
     val userProfile by profileViewModel.user.collectAsStateWithLifecycle()
     val isSaving by profileViewModel.isSaving.collectAsStateWithLifecycle()
     val profileUpdated by profileViewModel.profileUpdated.collectAsStateWithLifecycle()
-
     val context = LocalContext.current
 
     LaunchedEffect(authUser?.uid) {
@@ -82,7 +55,6 @@ fun AdminProfileScreen(
             profileViewModel.loadProfile(it)
         }
     }
-
     LaunchedEffect(profileUpdated) {
         if (profileUpdated) {
             showEditProfileDialog = false
@@ -98,7 +70,7 @@ fun AdminProfileScreen(
             .padding(20.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // -------- Profile Section --------
+        // Profile section
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth()
@@ -113,7 +85,6 @@ fun AdminProfileScreen(
                         .size(100.dp)
                         .clip(CircleShape)
                         .clickable { showProfileDialog = true }
-
                     userProfile?.profilePicUrl?.let {
                         Image(
                             painter = rememberAsyncImagePainter(model = it),
@@ -129,15 +100,12 @@ fun AdminProfileScreen(
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(12.dp))
-
             Text(
                 text = userProfile?.userName ?: "Admin",
                 fontSize = 22.sp,
                 color = MaterialTheme.colorScheme.onBackground
             )
-
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
@@ -147,9 +115,7 @@ fun AdminProfileScreen(
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                 )
-
                 Spacer(modifier = Modifier.width(8.dp))
-
                 IconButton(onClick = { showEditProfileDialog = true }) {
                     Icon(
                         imageVector = Icons.Default.Edit,
@@ -163,43 +129,27 @@ fun AdminProfileScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // -------- Options Section --------
-        Column {
-            ProfileOption(text = "Change Password") {
-                showChangePasswordDialog = true
-            }
-            HorizontalDivider()
-
-            ThemeOption(
-                text = "App Theme",
-                isChecked = isDarkTheme,
-                onCheckedChange = { onThemeChange(it) }
-            )
-            HorizontalDivider()
-
-            ProfileOption(text = "Contact Admin") {
+        // New options section as rounded cards
+        NewProfileOptions(
+            isDarkTheme = isDarkTheme,
+            onThemeChange = onThemeChange,
+            onChangePassword = { showChangePasswordDialog = true },
+            onContactSupport = {
                 val intent = Intent(Intent.ACTION_SENDTO).apply {
                     data = Uri.parse("mailto:vanshikagupta0009@gmail.com")
                     putExtra(Intent.EXTRA_SUBJECT, "Support Request")
                 }
                 context.startActivity(intent)
-            }
-            HorizontalDivider()
-
-            ProfileOption(text = "Privacy Policy") {
+            },
+            onPrivacyPolicy = {
                 val url = "https://yourapp.com/privacy"
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                 context.startActivity(intent)
-            }
-            HorizontalDivider()
+            },
+            onLogout = { showLogoutDialog = true }
+        )
 
-            ProfileOption(text = "Logout") {
-                showLogoutDialog = true
-            }
-            HorizontalDivider()
-        }
-
-        // -------- Version --------
+        // App version at bottom
         Text(
             text = "Version 1.0.0",
             fontSize = 13.sp,
@@ -208,11 +158,10 @@ fun AdminProfileScreen(
         )
     }
 
-    // -------- Change Password Dialog --------
+    // Change Password Dialog
     if (showChangePasswordDialog) {
         var newPassword by remember { mutableStateOf("") }
         var confirmPassword by remember { mutableStateOf("") }
-
         AlertDialog(
             onDismissRequest = { showChangePasswordDialog = false },
             title = { Text("Change Password") },
@@ -243,13 +192,9 @@ fun AdminProfileScreen(
                                 authViewModel.updatePassword(uid, newPassword, context)
                             }
                             showChangePasswordDialog = false
-                        } else {
-                            // Show error
                         }
                     }
-                ) {
-                    Text("Update")
-                }
+                ) { Text("Update") }
             },
             dismissButton = {
                 TextButton(onClick = { showChangePasswordDialog = false }) {
@@ -259,7 +204,7 @@ fun AdminProfileScreen(
         )
     }
 
-    // -------- Logout Confirmation Dialog --------
+    // Logout Dialog
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
@@ -277,7 +222,7 @@ fun AdminProfileScreen(
         )
     }
 
-    // -------- Edit Profile Dialog --------
+    // Edit Profile Dialog
     if (showEditProfileDialog) {
         val currentName = userProfile?.userName ?: ""
         var newName by remember { mutableStateOf(currentName) }
@@ -285,7 +230,6 @@ fun AdminProfileScreen(
         val photoPickerLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.GetContent()
         ) { uri: Uri? -> newPhotoUri = uri }
-
         AlertDialog(
             onDismissRequest = { showEditProfileDialog = false },
             title = { Text("Edit Profile") },
@@ -324,7 +268,6 @@ fun AdminProfileScreen(
                             )
                         }
                     }
-
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = newName,
@@ -389,74 +332,132 @@ fun AdminProfileScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showProfileDialog = false }) {
-                    Text("Close")
-                }
+                TextButton(onClick = { showProfileDialog = false }) { Text("Close") }
             }
         )
     }
 }
 
+// --------- Modern Option Cards ----------
+
 @Composable
-fun ProfileOption(text: String, onClick: () -> Unit) {
+fun NewProfileOptions(
+    isDarkTheme: Boolean,
+    onThemeChange: (Boolean) -> Unit,
+    onChangePassword: () -> Unit,
+    onContactSupport: () -> Unit,
+    onPrivacyPolicy: () -> Unit,
+    onLogout: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        ProfileOptionCard(
+            iconRes = R.drawable.baseline_password_24,
+            iconTint = MaterialTheme.colorScheme.primary,
+            text = "Change Password",
+            onClick = onChangePassword
+        )
+        ProfileOptionSwitchCard(
+            iconRes = R.drawable.baseline_app_shortcut_24,
+            iconTint = MaterialTheme.colorScheme.primary,
+            text = "App Theme toggle",
+            checked = isDarkTheme,
+            onCheckedChange = onThemeChange
+        )
+        ProfileOptionCard(
+            iconRes = R.drawable.baseline_mail_outline_24,
+            iconTint = MaterialTheme.colorScheme.primary,
+            text = "Contact Support",
+            onClick = onContactSupport
+        )
+        ProfileOptionCard(
+            iconRes = R.drawable.baseline_privacy_tip_24,
+            iconTint = MaterialTheme.colorScheme.primary,
+            text = "Privacy Policy",
+            onClick = onPrivacyPolicy
+        )
+        ProfileOptionCard(
+            iconRes = R.drawable.baseline_lock_open_24,
+            iconTint = MaterialTheme.colorScheme.primary,
+            text = "Logout",
+            onClick = onLogout
+        )
+    }
+}
+
+@Composable
+fun ProfileOptionCard(
+    iconRes: Int,
+    iconTint: Color,
+    text: String,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        onClick = onClick,
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = text,
+                tint = iconTint,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = text,
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onSurface
-            )
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "Next",
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
     }
 }
 
 @Composable
-fun ThemeOption(text: String, isChecked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+fun ProfileOptionSwitchCard(
+    iconRes: Int,
+    iconTint: Color,
+    text: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = text,
+                tint = iconTint,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = text,
                 fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
             )
             Switch(
-                checked = isChecked,
+                checked = checked,
                 onCheckedChange = onCheckedChange,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.background,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.background,
+                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.onSurface,
                     checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    uncheckedTrackColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f)
+                    uncheckedTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                 )
             )
         }
