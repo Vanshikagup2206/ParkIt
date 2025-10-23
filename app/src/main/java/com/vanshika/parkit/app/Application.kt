@@ -8,8 +8,7 @@ import dagger.hilt.android.HiltAndroidApp
 class ParkItApp : Application() {
     override fun onCreate() {
         super.onCreate()
-
-        // Init with App ID
+        // Init OneSignal
         OneSignal.initWithContext(this, "531eda43-b91a-4e09-b931-0bd569b034e9")
     }
 }
