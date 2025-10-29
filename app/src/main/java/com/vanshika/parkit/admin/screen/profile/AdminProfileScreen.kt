@@ -127,7 +127,7 @@ fun AdminProfileScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(15.dp))
 
         // New options section as rounded cards
         NewProfileOptions(

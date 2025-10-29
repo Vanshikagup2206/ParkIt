@@ -1,6 +1,8 @@
 package com.vanshika.parkit.admin.navigation
 
 import ZoneUsageDetailsScreen
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,7 +39,31 @@ fun AdminNavigationGraph(
     NavHost(
         navController = navHostController,
         startDestination = AdminBottomNavItem.Home.route,
-        modifier = modifier
+        modifier = modifier,
+        enterTransition = {
+            slideIntoContainer(
+                AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(500)
+            )
+        },
+        exitTransition = {
+            slideOutOfContainer(
+                AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(500)
+            )
+        },
+        popEnterTransition = {
+            slideIntoContainer(
+                AnimatedContentTransitionScope.SlideDirection.Right,
+                animationSpec = tween(500)
+            )
+        },
+        popExitTransition = {
+            slideOutOfContainer(
+                AnimatedContentTransitionScope.SlideDirection.Right,
+                animationSpec = tween(500)
+            )
+        }
     ) {
         composable(AdminBottomNavItem.Home.route) {
             AdminHomeScreen(navHostController = navHostController)
