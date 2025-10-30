@@ -5,6 +5,7 @@ sealed class MainNavRoutes (val route: String){
     object Login: MainNavRoutes("login")
     object Signup: MainNavRoutes("signup")
     object ForgotPassword: MainNavRoutes("forgot_password_screen")
+    object OnBoarding: MainNavRoutes("on_boarding")
 
     object AdminMain: MainNavRoutes("admin_main")
     object UserMain: MainNavRoutes("user_main")

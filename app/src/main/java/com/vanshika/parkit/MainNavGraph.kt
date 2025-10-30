@@ -11,6 +11,7 @@ import com.vanshika.parkit.authentication.ui.ForgotPasswordScreen
 import com.vanshika.parkit.authentication.ui.LoginScreen
 import com.vanshika.parkit.authentication.ui.SignupScreen
 import com.vanshika.parkit.authentication.viewmodel.AuthenticationViewModel
+import com.vanshika.parkit.onboarding.OnBoardingPager
 import com.vanshika.parkit.user.navigation.UserMainScreen
 
 @Composable
@@ -55,6 +56,11 @@ fun MainNavGraph(
                 mainNavController = navController,
                 authenticationViewModel = authViewModel
             )
+        }
+
+        // OnBoarding
+        composable(MainNavRoutes.OnBoarding.route) {
+            OnBoardingPager(navController)
         }
     }
 }

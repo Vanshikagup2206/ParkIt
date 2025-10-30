@@ -148,6 +148,8 @@ class AuthenticationViewModel @Inject constructor() : ViewModel() {
         _user.value = null
         _customUserId.value = null
         _role.value = null
+        _errorMessage.value = null
+        _passwordResetStatus.value = null
         OneSignal.logout()
     }
 
