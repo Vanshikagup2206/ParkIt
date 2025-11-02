@@ -1,10 +1,13 @@
 package com.vanshika.parkit.user.data.repository
 
+import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.vanshika.parkit.R
 import com.vanshika.parkit.admin.data.model.NotificationDataClass
 import com.vanshika.parkit.user.data.model.IssuesDataClass
 import com.vanshika.parkit.user.data.model.toFireStoreMap
+import dagger.hilt.android.qualifiers.ApplicationContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -13,7 +16,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import javax.inject.Inject
 
-class IssuesRepository @Inject constructor() {
+class IssuesRepository @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     private val collection = FirebaseFirestore.getInstance().collection("issues")
     private val notificationsCollection =
         FirebaseFirestore.getInstance().collection("notifications")
@@ -123,12 +128,14 @@ class IssuesRepository @Inject constructor() {
     }
 
     private fun sendPushToOneSignal(userId: String?, title: String, message: String) {
+        val apiKey = context.getString(R.string.onesignal_api_key)
+
         val url = "https://onesignal.com/api/v1/notifications"
 
         val adminId = "12200814"
 
         val json = JSONObject().apply {
-            put("app_id", "")
+            put("app_id", "531eda43-b91a-4e09-b931-0bd569b034e9")
             if (userId != null) {
                 put("include_external_user_ids", JSONArray().put(userId))
             } else {
@@ -143,7 +150,7 @@ class IssuesRepository @Inject constructor() {
             .url(url)
             .addHeader(
                 "Authorization",
-                "Basic "
+                apiKey
             )
             .post(body)
             .build()
