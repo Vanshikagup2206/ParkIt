@@ -11,6 +11,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,7 +41,16 @@ fun UserMainScreen(
     )
     val systemUiController = rememberSystemUiController()
 
+    val userId by authenticationViewModel.customUserId.collectAsState()
+
+    LaunchedEffect(userId) {
+        userId?.let {
+            viewModel.observeUserNotifications(it)
+        }
+    }
+
     val unreadCount by viewModel.unreadCount.collectAsState()
+
     Log.d("UserMainScreen", "Unread Count: $unreadCount")
 
 
@@ -103,6 +113,10 @@ fun UserMainScreen(
                         selected = currentRoute == items.route,
                         onClick = {
                             if (currentRoute != items.route) {
+                                if (items == UserBottomNavItem.Notification) {
+                                    // Call markAllAsRead() here, before navigating
+                                    viewModel.markAllAsRead()
+                                }
                                 navHostController.navigate(items.route) {
                                     popUpTo(navHostController.graph.startDestinationId) {
                                         saveState = true
