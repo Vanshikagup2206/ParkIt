@@ -3,13 +3,34 @@ package com.vanshika.parkit.admin.screen.analytics.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ShowChart
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -17,6 +38,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vanshika.parkit.admin.viewmodel.BookingViewModel
@@ -45,116 +67,159 @@ fun DailyUsageLineChart(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        onClick = onClick
     ) {
-        Column(Modifier.padding(12.dp)) {
-            Text("Daily Usage", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ShowChart,
+                        contentDescription = "Daily Usage",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Daily Usage Trends",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = "View Details",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
 
-            if (days.isNotEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp) // fix height for labels + chart
-                ) {
-                    // Y-axis labels
-                    Column(
-                        modifier = Modifier
-                            .width(32.dp)
-                            .fillMaxHeight(),
-                        verticalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        val step = (maxY / 4).coerceAtLeast(1f)
-                        for (i in 4 downTo 0) {
-                            Text((i * step).toInt().toString(), fontSize = 12.sp)
-                        }
-                    }
+            Spacer(Modifier.height(16.dp))
 
-                    // Chart
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .pointerInput(values) {
-                                detectTapGestures { offset ->
-                                    val xStep = size.width / (days.size - 1).coerceAtLeast(1)
-                                    selectedIndex = (offset.x / xStep)
-                                        .roundToInt()
-                                        .coerceIn(0, values.lastIndex)
+            Card(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .clickable { onClick() },
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    Text("Daily Usage", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+
+                    if (days.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp) // fix height for labels + chart
+                        ) {
+                            // Y-axis labels
+                            Column(
+                                modifier = Modifier
+                                    .width(32.dp)
+                                    .fillMaxHeight(),
+                                verticalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                val step = (maxY / 4).coerceAtLeast(1f)
+                                for (i in 4 downTo 0) {
+                                    Text((i * step).toInt().toString(), fontSize = 12.sp)
                                 }
                             }
-                    ) {
-                        Canvas(Modifier.matchParentSize()) {
-                            val xStep = size.width / (days.size - 1).coerceAtLeast(1)
-                            val yRatio = size.height / maxY
-                            val step = (maxY / 4).coerceAtLeast(1f)
 
-                            // Grid lines
-                            for (i in 0..4) {
-                                val value = i * step
-                                val y = size.height - (value * yRatio)
-                                drawLine(
-                                    color = gridColor,
-                                    start = Offset(0f, y),
-                                    end = Offset(size.width, y),
-                                    strokeWidth = 1f
-                                )
-                            }
-
-                            // Line path
-                            val path = Path()
-                            values.forEachIndexed { index, value ->
-                                val x = index * xStep
-                                val y = size.height - (value * yRatio)
-                                if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
-                            }
-                            drawPath(path, color = lineColor, style = Stroke(width = 4f))
-
-                            // Points + labels
-                            values.forEachIndexed { index, value ->
-                                val x = index * xStep
-                                val y = size.height - (value * yRatio)
-
-                                val radius = if (selectedIndex == index) 10f else 6f
-
-                                drawCircle(
-                                    color = lineColor,
-                                    radius = radius,
-                                    center = Offset(x, y)
-                                )
-
-                                if (selectedIndex == index) {
-                                    drawContext.canvas.nativeCanvas.drawText(
-                                        value.toString(),
-                                        x,
-                                        y - 20,
-                                        android.graphics.Paint().apply {
-                                            textSize = 36f
-                                            color = textColor.toArgb()
-                                            textAlign = android.graphics.Paint.Align.CENTER
+                            // Chart
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .pointerInput(values) {
+                                        detectTapGestures { offset ->
+                                            val xStep =
+                                                size.width / (days.size - 1).coerceAtLeast(1)
+                                            selectedIndex = (offset.x / xStep)
+                                                .roundToInt()
+                                                .coerceIn(0, values.lastIndex)
                                         }
-                                    )
+                                    }
+                            ) {
+                                Canvas(Modifier.matchParentSize()) {
+                                    val xStep = size.width / (days.size - 1).coerceAtLeast(1)
+                                    val yRatio = size.height / maxY
+                                    val step = (maxY / 4).coerceAtLeast(1f)
+
+                                    // Grid lines
+                                    for (i in 0..4) {
+                                        val value = i * step
+                                        val y = size.height - (value * yRatio)
+                                        drawLine(
+                                            color = gridColor,
+                                            start = Offset(0f, y),
+                                            end = Offset(size.width, y),
+                                            strokeWidth = 1f
+                                        )
+                                    }
+
+                                    // Line path
+                                    val path = Path()
+                                    values.forEachIndexed { index, value ->
+                                        val x = index * xStep
+                                        val y = size.height - (value * yRatio)
+                                        if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                                    }
+                                    drawPath(path, color = lineColor, style = Stroke(width = 4f))
+
+                                    // Points + labels
+                                    values.forEachIndexed { index, value ->
+                                        val x = index * xStep
+                                        val y = size.height - (value * yRatio)
+
+                                        val radius = if (selectedIndex == index) 10f else 6f
+
+                                        drawCircle(
+                                            color = lineColor,
+                                            radius = radius,
+                                            center = Offset(x, y)
+                                        )
+
+                                        if (selectedIndex == index) {
+                                            drawContext.canvas.nativeCanvas.drawText(
+                                                value.toString(),
+                                                x,
+                                                y - 20,
+                                                android.graphics.Paint().apply {
+                                                    textSize = 36f
+                                                    color = textColor.toArgb()
+                                                    textAlign = android.graphics.Paint.Align.CENTER
+                                                }
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
+
+                        Spacer(Modifier.height(4.dp))
+
+                        // X-axis labels
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 32.dp)
+                        ) {
+                            days.forEach { day -> Text(day, fontSize = 12.sp) }
+                        }
+                    } else {
+                        Text("No data available")
                     }
                 }
-
-                Spacer(Modifier.height(4.dp))
-
-                // X-axis labels
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 32.dp)
-                ) {
-                    days.forEach { day -> Text(day, fontSize = 12.sp) }
-                }
-            } else {
-                Text("No data available")
             }
         }
     }
