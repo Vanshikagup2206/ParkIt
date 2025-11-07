@@ -11,16 +11,24 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vanshika.parkit.admin.viewmodel.BookingViewModel
@@ -40,77 +48,119 @@ fun UsageHeatmap(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        onClick = onClick
     ) {
-        Column(Modifier.padding(12.dp)) {
-            Text("Heatmap", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-
-            // Each row = Day + heatmap cells
-            Column {
-                days.forEachIndexed { dayIndex, day ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Day label
-                        Text(
-                            text = day,
-                            fontSize = 12.sp,
-                            modifier = Modifier.width(32.dp)
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.GridView,
+                        contentDescription = "Heatmap",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Usage Heatmap",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
                         )
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = "View Details",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
 
-                        // Row of cells for this day
-                        hours.forEach { hour ->
-                            val count = heatmap[Pair(dayIndex, hour)] ?: 0
-                            val intensity = (count / maxUsage).coerceIn(0f, 1f)
+            Spacer(Modifier.height(16.dp))
 
-                            val baseColors = listOf(
-                                Color(0xFFBBDEFB), // light blue (low usage)
-                                Color(0xFF2196F3), // medium blue
-                                Color(0xFF0D47A1)  // dark blue (high usage)
-                            )
+            Card(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .clickable { onClick() },
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    Text("Heatmap", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
 
-                            // Map intensity (0f..1f) to color from gradient
-                            val usageColor = if (count == 0) {
-                                Color.LightGray
-                            } else {
-                                androidx.compose.ui.graphics.lerp(
-                                    baseColors[0],
-                                    baseColors[2],
-                                    intensity
+                    // Each row = Day + heatmap cells
+                    Column {
+                        days.forEachIndexed { dayIndex, day ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Day label
+                                Text(
+                                    text = day,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.width(32.dp)
                                 )
-                            }
 
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .aspectRatio(1f)
-                                    .padding(1.dp)
-                                    .background(usageColor)
-                            )
+                                // Row of cells for this day
+                                hours.forEach { hour ->
+                                    val count = heatmap[Pair(dayIndex, hour)] ?: 0
+                                    val intensity = (count / maxUsage).coerceIn(0f, 1f)
+
+                                    val baseColors = listOf(
+                                        Color(0xFFBBDEFB), // light blue (low usage)
+                                        Color(0xFF2196F3), // medium blue
+                                        Color(0xFF0D47A1)  // dark blue (high usage)
+                                    )
+
+                                    // Map intensity (0f..1f) to color from gradient
+                                    val usageColor = if (count == 0) {
+                                        Color.LightGray
+                                    } else {
+                                        androidx.compose.ui.graphics.lerp(
+                                            baseColors[0],
+                                            baseColors[2],
+                                            intensity
+                                        )
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .aspectRatio(1f)
+                                            .padding(1.dp)
+                                            .background(usageColor)
+                                    )
+                                }
+                            }
                         }
                     }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // Hour labels
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 32.dp) // align with grid
+                    ) {
+                        hours.forEach { hour ->
+                            Text("${hour}:00", fontSize = 12.sp)
+                        }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
                 }
             }
-
-            Spacer(Modifier.height(8.dp))
-
-            // Hour labels
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 32.dp) // align with grid
-            ) {
-                hours.forEach { hour ->
-                    Text("${hour}:00", fontSize = 12.sp)
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
         }
     }
 }

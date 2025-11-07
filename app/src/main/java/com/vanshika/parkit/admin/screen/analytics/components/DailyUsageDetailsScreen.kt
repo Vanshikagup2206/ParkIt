@@ -18,11 +18,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vanshika.parkit.admin.viewmodel.BookingViewModel
+import com.vanshika.parkit.ui.theme.ThemePreference
 import com.vanshika.parkit.user.screen.bookings.BookingCard
 import java.text.SimpleDateFormat
 import java.util.*
@@ -36,6 +38,9 @@ fun DailyUsageDetailsScreen(
 
     var selectedDay by remember { mutableStateOf(0) }
     val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+
+    val context = LocalContext.current
+    val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
 
     Box(
         modifier = Modifier
@@ -175,7 +180,7 @@ fun DailyUsageDetailsScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(dayBookings) { booking ->
-                        BookingCard(booking)
+                        BookingCard(booking, isDarkTheme)
                     }
                 }
             }
