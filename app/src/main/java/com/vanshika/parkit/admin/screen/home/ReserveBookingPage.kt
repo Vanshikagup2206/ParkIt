@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -19,6 +20,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
@@ -148,460 +151,576 @@ fun ReserveBookingPage(
         speechLauncher.launch(intent)
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.03f)
+                    )
+                )
+            )
     ) {
-        Text(
-            text = "Reserve Booking",
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(0.dp),
-            colors = CardDefaults.cardColors(containerColor = if (isDarkTheme) Color.Black else Color.White)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
-
-                // Vehicle Number
-                ExposedDropdownMenuBox(
-                    expanded = vehicleNoExpanded && vehicleNoSuggestions.isNotEmpty(),
-                    onExpandedChange = { vehicleNoExpanded = !vehicleNoExpanded }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedTextField(
-                        value = vehicleNo,
-                        onValueChange = {
-                            vehicleNo = it; vehicleNoError = ""; vehicleNoExpanded = true
-                        },
-                        label = { Text("Vehicle Number") },
-                        placeholder = { Text("e.g. MH12AB1234") },
-                        isError = vehicleNoError.isNotEmpty(),
-                        trailingIcon = {
-                            IconButton(onClick = { startListeningFor("vehicleNo") }) {
-                                Icon(
-                                    painterResource(id = R.drawable.baseline_mic_24),
-                                    contentDescription = null
-                                )
-                            }
-                        },
-                        singleLine = true,
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
+                    Column {
+                        Text(
+                            text = "Reserve Booking",
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        "🚗 Vehicle Information",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.primary
                     )
-                    ExposedDropdownMenu(
+
+                    // Vehicle Number
+                    ExposedDropdownMenuBox(
                         expanded = vehicleNoExpanded && vehicleNoSuggestions.isNotEmpty(),
-                        onDismissRequest = { vehicleNoExpanded = false },
-                        modifier = Modifier.background(
-                            color = if (isDarkTheme) Color.Black else Color.White
-                        )
+                        onExpandedChange = { vehicleNoExpanded = !vehicleNoExpanded }
                     ) {
-                        vehicleNoSuggestions.forEach { suggestion ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = suggestion,
-                                        color = if (isDarkTheme) Color.White else Color.Black
-                                    )
-                                },
-                                onClick = {
-                                    vehicleNo = suggestion
-                                    val user = allBookings.find { it.vehicleNumber == suggestion }
-                                    username = user?.userName ?: ""
-                                    userId = user?.customUserId ?: ""
-                                    contactNo = user?.contactNo ?: ""
-                                    vehicleType = user?.vehicleType ?: ""
-                                    priorityTag = user?.priorityTag ?: ""
-                                    vehicleNoExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                // Vehicle Type
-                OutlinedTextField(
-                    value = vehicleType,
-                    onValueChange = { vehicleType = it; vehicleTypeError = "" },
-                    label = { Text("Vehicle Type") },
-                    placeholder = { Text("Car, Bike, etc.") },
-                    isError = vehicleTypeError.isNotEmpty(),
-                    trailingIcon = {
-                        IconButton(onClick = { startListeningFor("vehicleType") }) {
-                            Icon(
-                                painterResource(id = R.drawable.baseline_mic_24),
-                                contentDescription = null
-                            )
-                        }
-                    },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // User ID
-                ExposedDropdownMenuBox(
-                    expanded = userIdExpanded && userIdSuggestions.isNotEmpty(),
-                    onExpandedChange = { userIdExpanded = !userIdExpanded }
-                ) {
-                    OutlinedTextField(
-                        value = userId,
-                        onValueChange = { userId = it; userIdError = ""; userIdExpanded = true },
-                        label = { Text("User ID") },
-                        placeholder = { Text("Enter User ID") },
-                        isError = userIdError.isNotEmpty(),
-                        trailingIcon = {
-                            IconButton(onClick = { startListeningFor("userId") }) {
-                                Icon(
-                                    painterResource(id = R.drawable.baseline_mic_24),
-                                    contentDescription = null
-                                )
-                            }
-                        },
-                        singleLine = true,
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = userIdExpanded && userIdSuggestions.isNotEmpty(),
-                        onDismissRequest = { userIdExpanded = false },
-                        modifier = Modifier.background(
-                            color = if (isDarkTheme) Color.Black else Color.White
-                        )
-                    ) {
-                        userIdSuggestions.forEach { user ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = "${user.customUserId} - ${user.userName}",
-                                        color = if (isDarkTheme) Color.White else Color.Black
-                                    )
-                                },
-                                onClick = {
-                                    userId = user.customUserId
-                                    username = user.userName
-                                    contactNo = user.contactNo
-                                    vehicleNo = user.vehicleNumber.toString()
-                                    vehicleType = user.vehicleType
-                                    priorityTag = user.priorityTag
-                                    userIdExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                // Username
-                ExposedDropdownMenuBox(
-                    expanded = usernameExpanded && usernameSuggestions.isNotEmpty(),
-                    onExpandedChange = { usernameExpanded = !usernameExpanded }
-                ) {
-                    OutlinedTextField(
-                        value = username,
-                        onValueChange = {
-                            username = it; usernameError = ""; usernameExpanded = true
-                        },
-                        label = { Text("Username") },
-                        placeholder = { Text("Enter Customer Name") },
-                        isError = usernameError.isNotEmpty(),
-                        trailingIcon = {
-                            IconButton(onClick = { startListeningFor("username") }) {
-                                Icon(
-                                    painterResource(id = R.drawable.baseline_mic_24),
-                                    contentDescription = null
-                                )
-                            }
-                        },
-                        singleLine = true,
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = usernameExpanded && usernameSuggestions.isNotEmpty(),
-                        onDismissRequest = { usernameExpanded = false },
-                        modifier = Modifier.background(
-                            color = if (isDarkTheme) Color.Black else Color.White
-                        )
-                    ) {
-                        usernameSuggestions.forEach { user ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = "${user.userName} - ${user.customUserId}",
-                                        color = if (isDarkTheme) Color.White else Color.Black
-                                    )
-                                },
-                                onClick = {
-                                    username = user.userName
-                                    userId = user.customUserId
-                                    contactNo = user.contactNo
-                                    vehicleNo = user.vehicleNumber.toString()
-                                    vehicleType = user.vehicleType
-                                    priorityTag = user.priorityTag
-                                    usernameExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                // Slot & Zone
-                OutlinedTextField(
-                    value = slotId,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Slot Id") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = zoneName,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Zone Name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Contact Number
-                OutlinedTextField(
-                    value = contactNo,
-                    onValueChange = { contactNo = it; contactNoError = "" },
-                    label = { Text("Contact Number") },
-                    isError = contactNoError.isNotEmpty(),
-                    supportingText = {
-                        if (contactNoError.isNotEmpty()) Text(
-                            contactNoError,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = { startListeningFor("contactNo") }) {
-                            Icon(
-                                painterResource(id = R.drawable.baseline_mic_24),
-                                contentDescription = null
-                            )
-                        }
-                    },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    placeholder = { Text("Enter Phone Number") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Priority
-                ExposedDropdownMenuBox(
-                    expanded = priorityExpanded,
-                    onExpandedChange = { priorityExpanded = !priorityExpanded }
-                ) {
-                    OutlinedTextField(
-                        value = priorityTag,
-                        onValueChange = { priorityTagError = "" },
-                        readOnly = true,
-                        label = { Text("Priority Tag") },
-                        isError = priorityTagError.isNotEmpty(),
-                        placeholder = { Text("Select Priority") },
-                        trailingIcon = {
-                            Icon(
-                                Icons.Default.ArrowDropDown,
-                                contentDescription = null
-                            )
-                        },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = priorityExpanded,
-                        onDismissRequest = { priorityExpanded = false },
-                        modifier = Modifier.background(
-                            color = if (isDarkTheme) Color.Black else Color.White
-                        )
-                    ) {
-                        priorityOptions.forEach { option ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = option,
-                                        color = if (isDarkTheme) Color.White else Color.Black
-                                    )
-                                },
-                                onClick = {
-                                    priorityTag = option
-                                    priorityExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                // Date Picker
-                OutlinedButton(
-                    onClick = {
-                        val calendar = Calendar.getInstance()
-                        DatePickerDialog(
-                            context,
-                            { _, y, m, d ->
-                                val cal = Calendar.getInstance()
-                                cal.set(y, m, d)
-                                datePicked = dateFormatter.format(cal.time)
-                                dateError = ""
+                        OutlinedTextField(
+                            value = vehicleNo,
+                            onValueChange = {
+                                vehicleNo = it; vehicleNoError = ""; vehicleNoExpanded = true
                             },
-                            calendar.get(Calendar.YEAR),
-                            calendar.get(Calendar.MONTH),
-                            calendar.get(Calendar.DAY_OF_MONTH)
-                        ).show()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(
-                        brush = if (dateError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error) else SolidColor(
-                            MaterialTheme.colorScheme.outline
+                            label = { Text("Vehicle Number") },
+                            placeholder = { Text("e.g. MH12AB1234") },
+                            isError = vehicleNoError.isNotEmpty(),
+                            trailingIcon = {
+                                IconButton(onClick = { startListeningFor("vehicleNo") }) {
+                                    Icon(
+                                        painterResource(id = R.drawable.baseline_mic_24),
+                                        contentDescription = null
+                                    )
+                                }
+                            },
+                            supportingText = {
+                                if (vehicleNoError.isNotEmpty())
+                                    Text(vehicleNoError, color = MaterialTheme.colorScheme.error)
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth()
                         )
-                    )
-                ) { Text(if (datePicked.isEmpty()) "Select Date" else "Date: $datePicked") }
-                if (dateError.isNotEmpty()) Text(dateError, color = MaterialTheme.colorScheme.error)
-
-                // Time Pickers
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            val cal = Calendar.getInstance()
-                            TimePickerDialog(
-                                context,
-                                { _, h, m ->
-                                    cal.set(Calendar.HOUR_OF_DAY, h)
-                                    cal.set(Calendar.MINUTE, m)
-                                    startTimePicked = timeFormatter.format(cal.time)
-                                    startTimeError = ""
-                                },
-                                cal.get(Calendar.HOUR_OF_DAY),
-                                cal.get(Calendar.MINUTE),
-                                false
-                            ).show()
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(
-                            brush = if (startTimeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error) else SolidColor(
-                                MaterialTheme.colorScheme.outline
+                        ExposedDropdownMenu(
+                            expanded = vehicleNoExpanded && vehicleNoSuggestions.isNotEmpty(),
+                            onDismissRequest = { vehicleNoExpanded = false },
+                            modifier = Modifier.background(
+                                color = if (isDarkTheme) Color.Black else Color.White
                             )
-                        )
-                    ) { Text(if (startTimePicked.isEmpty()) "Start Time" else "Time: $startTimePicked") }
-
-                    OutlinedButton(
-                        onClick = {
-                            val cal = Calendar.getInstance()
-                            TimePickerDialog(
-                                context,
-                                { _, h, m ->
-                                    cal.set(Calendar.HOUR_OF_DAY, h)
-                                    cal.set(Calendar.MINUTE, m)
-                                    endTimePicked = timeFormatter.format(cal.time)
-                                    endTimeError = ""
-                                },
-                                cal.get(Calendar.HOUR_OF_DAY),
-                                cal.get(Calendar.MINUTE),
-                                false
-                            ).show()
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(
-                            brush = if (endTimeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error) else SolidColor(
-                                MaterialTheme.colorScheme.outline
-                            )
-                        )
-                    ) { Text(if (endTimePicked.isEmpty()) "End Time" else "Time: $endTimePicked") }
-                }
-
-                // Confirm & Cancel
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            currentBooking.value?.let {
-                                viewModel.deleteBookings(it.slotId)
-                            }
-                            viewModel.updateSlotStatus(slotId, SlotStatus.AVAILABLE)
-                            vehicleNo = ""
-                            vehicleType = ""
-                            userId = ""
-                            username = ""
-                            contactNo = ""
-                            priorityTag = ""
-                            datePicked = ""
-                            startTimePicked = ""
-                            endTimePicked = ""
-                            Toast.makeText(context, "Booking Cancelled", Toast.LENGTH_SHORT).show()
-                            onNavigateUp()
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Cancel") }
-
-                    Button(onClick = {
-                        when {
-                            vehicleNo.isBlank() -> vehicleNoError = "Enter vehicle no."
-                            vehicleType.isBlank() -> vehicleTypeError = "Enter vehicle type"
-                            userId.isBlank() -> userIdError = "Enter user ID"
-                            username.isBlank() -> usernameError = "Enter username"
-                            contactNo.isBlank() -> contactNoError = "Enter contact no."
-                            contactNo.length < 10 -> contactNoError = "Enter valid mobile no"
-                            datePicked.isBlank() -> dateError = "Select date"
-                            startTimePicked.isBlank() -> startTimeError = "Select start time"
-                            endTimePicked.isBlank() -> endTimeError = "Select end time"
-                            priorityTag.isBlank() -> priorityTagError = "Select one"
-                            else -> {
-                                val dateTimeFormat =
-                                    SimpleDateFormat("dd MMM yyyy hh:mm a", Locale.getDefault())
-                                val dayFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-
-                                val bookingDate = Timestamp(dayFormat.parse(datePicked)!!)
-                                val bookingStartTime =
-                                    Timestamp(dateTimeFormat.parse("$datePicked $startTimePicked")!!)
-                                val bookingEndTime =
-                                    Timestamp(dateTimeFormat.parse("$datePicked $endTimePicked")!!)
-
-                                val booking = BookingDetailsDataClass(
-                                    bookedBy = username,
-                                    vehicleNumber = vehicleNo,
-                                    vehicleType = vehicleType,
-                                    customUserId = userId,
-                                    userName = username,
-                                    slotId = slotId,
-                                    zone = zoneName,
-                                    date = bookingDate,
-                                    status = SlotStatus.RESERVED,
-                                    bookingStartTime = bookingStartTime,
-                                    bookingEndTime = bookingEndTime,
-                                    contactNo = contactNo,
-                                    priorityTag = priorityTag
+                        ) {
+                            vehicleNoSuggestions.forEach { suggestion ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = suggestion,
+                                            color = if (isDarkTheme) Color.White else Color.Black
+                                        )
+                                    },
+                                    onClick = {
+                                        vehicleNo = suggestion
+                                        val user =
+                                            allBookings.find { it.vehicleNumber == suggestion }
+                                        username = user?.userName ?: ""
+                                        userId = user?.customUserId ?: ""
+                                        contactNo = user?.contactNo ?: ""
+                                        vehicleType = user?.vehicleType ?: ""
+                                        priorityTag = user?.priorityTag ?: ""
+                                        vehicleNoExpanded = false
+                                    }
                                 )
+                            }
+                        }
+                    }
 
-                                viewModel.addBooking(booking)
-                                viewModel.updateSlotStatus(slotId, SlotStatus.RESERVED)
+                    // Vehicle Type
+                    OutlinedTextField(
+                        value = vehicleType,
+                        onValueChange = { vehicleType = it; vehicleTypeError = "" },
+                        label = { Text("Vehicle Type") },
+                        placeholder = { Text("Car, Bike, etc.") },
+                        isError = vehicleTypeError.isNotEmpty(),
+                        trailingIcon = {
+                            IconButton(onClick = { startListeningFor("vehicleType") }) {
+                                Icon(
+                                    painterResource(id = R.drawable.baseline_mic_24),
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
+                        supportingText = {
+                            if (vehicleTypeError.isNotEmpty())
+                                Text(vehicleTypeError, color = MaterialTheme.colorScheme.error)
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
-                                Toast.makeText(context, "Booking reserved!", Toast.LENGTH_SHORT)
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    // Section: User Details
+                    Text(
+                        "👤 User Information",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    // User ID
+                    ExposedDropdownMenuBox(
+                        expanded = userIdExpanded && userIdSuggestions.isNotEmpty(),
+                        onExpandedChange = { userIdExpanded = !userIdExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = userId,
+                            onValueChange = {
+                                userId = it; userIdError = ""; userIdExpanded = true
+                            },
+                            label = { Text("User ID") },
+                            placeholder = { Text("Enter User ID") },
+                            isError = userIdError.isNotEmpty(),
+                            trailingIcon = {
+                                IconButton(onClick = { startListeningFor("userId") }) {
+                                    Icon(
+                                        painterResource(id = R.drawable.baseline_mic_24),
+                                        contentDescription = null
+                                    )
+                                }
+                            },
+                            supportingText = {
+                                if (userIdError.isNotEmpty())
+                                    Text(userIdError, color = MaterialTheme.colorScheme.error)
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = userIdExpanded && userIdSuggestions.isNotEmpty(),
+                            onDismissRequest = { userIdExpanded = false },
+                            modifier = Modifier.background(
+                                color = if (isDarkTheme) Color.Black else Color.White
+                            )
+                        ) {
+                            userIdSuggestions.forEach { user ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = "${user.customUserId} - ${user.userName}",
+                                            color = if (isDarkTheme) Color.White else Color.Black
+                                        )
+                                    },
+                                    onClick = {
+                                        userId = user.customUserId
+                                        username = user.userName
+                                        contactNo = user.contactNo
+                                        vehicleNo = user.vehicleNumber.toString()
+                                        vehicleType = user.vehicleType
+                                        priorityTag = user.priorityTag
+                                        userIdExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Username
+                    ExposedDropdownMenuBox(
+                        expanded = usernameExpanded && usernameSuggestions.isNotEmpty(),
+                        onExpandedChange = { usernameExpanded = !usernameExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = username,
+                            onValueChange = {
+                                username = it; usernameError = ""; usernameExpanded = true
+                            },
+                            label = { Text("Username") },
+                            placeholder = { Text("Enter Customer Name") },
+                            isError = usernameError.isNotEmpty(),
+                            trailingIcon = {
+                                IconButton(onClick = { startListeningFor("username") }) {
+                                    Icon(
+                                        painterResource(id = R.drawable.baseline_mic_24),
+                                        contentDescription = null
+                                    )
+                                }
+                            },
+                            supportingText = {
+                                if (usernameError.isNotEmpty())
+                                    Text(usernameError, color = MaterialTheme.colorScheme.error)
+                            },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = usernameExpanded && usernameSuggestions.isNotEmpty(),
+                            onDismissRequest = { usernameExpanded = false },
+                            modifier = Modifier.background(
+                                color = if (isDarkTheme) Color.Black else Color.White
+                            )
+                        ) {
+                            usernameSuggestions.forEach { user ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = "${user.userName} - ${user.customUserId}",
+                                            color = if (isDarkTheme) Color.White else Color.Black
+                                        )
+                                    },
+                                    onClick = {
+                                        username = user.userName
+                                        userId = user.customUserId
+                                        contactNo = user.contactNo
+                                        vehicleNo = user.vehicleNumber.toString()
+                                        vehicleType = user.vehicleType
+                                        priorityTag = user.priorityTag
+                                        usernameExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Contact Number
+                    OutlinedTextField(
+                        value = contactNo,
+                        onValueChange = { contactNo = it; contactNoError = "" },
+                        label = { Text("Contact Number") },
+                        isError = contactNoError.isNotEmpty(),
+                        supportingText = {
+                            if (contactNoError.isNotEmpty()) Text(
+                                contactNoError,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { startListeningFor("contactNo") }) {
+                                Icon(
+                                    painterResource(id = R.drawable.baseline_mic_24),
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        placeholder = { Text("Enter Phone Number") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Priority
+                    ExposedDropdownMenuBox(
+                        expanded = priorityExpanded,
+                        onExpandedChange = { priorityExpanded = !priorityExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = priorityTag,
+                            onValueChange = { priorityTagError = "" },
+                            readOnly = true,
+                            label = { Text("Priority Tag") },
+                            isError = priorityTagError.isNotEmpty(),
+                            placeholder = { Text("Select Priority") },
+                            trailingIcon = {
+                                Icon(
+                                    Icons.Default.ArrowDropDown,
+                                    contentDescription = null
+                                )
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = priorityExpanded,
+                            onDismissRequest = { priorityExpanded = false },
+                            modifier = Modifier.background(
+                                color = if (isDarkTheme) Color.Black else Color.White
+                            )
+                        ) {
+                            priorityOptions.forEach { option ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = option,
+                                            color = if (isDarkTheme) Color.White else Color.Black
+                                        )
+                                    },
+                                    onClick = {
+                                        priorityTag = option
+                                        priorityExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    // Section: Booking Details
+                    Text(
+                        "📅 Booking Schedule",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    // Slot & Zone (Read-only)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = slotId,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Slot") },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = zoneName,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Zone") },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    // Date Picker
+                    OutlinedButton(
+                        onClick = {
+                            val calendar = Calendar.getInstance()
+                            DatePickerDialog(
+                                context,
+                                { _, y, m, d ->
+                                    val cal = Calendar.getInstance()
+                                    cal.set(y, m, d)
+                                    datePicked = dateFormatter.format(cal.time)
+                                    dateError = ""
+                                },
+                                calendar.get(Calendar.YEAR),
+                                calendar.get(Calendar.MONTH),
+                                calendar.get(Calendar.DAY_OF_MONTH)
+                            ).show()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (dateError.isNotEmpty())
+                                MaterialTheme.colorScheme.errorContainer
+                            else MaterialTheme.colorScheme.surface
+                        )
+                    ) { Text(if (datePicked.isEmpty()) "Select Date" else "Date: $datePicked") }
+                    if (dateError.isNotEmpty()) Text(
+                        dateError,
+                        color = MaterialTheme.colorScheme.error
+                    )
+
+                    // Time Pickers
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                val cal = Calendar.getInstance()
+                                TimePickerDialog(
+                                    context,
+                                    { _, h, m ->
+                                        cal.set(Calendar.HOUR_OF_DAY, h)
+                                        cal.set(Calendar.MINUTE, m)
+                                        startTimePicked = timeFormatter.format(cal.time)
+                                        startTimeError = ""
+                                    },
+                                    cal.get(Calendar.HOUR_OF_DAY),
+                                    cal.get(Calendar.MINUTE),
+                                    false
+                                ).show()
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = ButtonDefaults.outlinedButtonBorder.copy(
+                                brush = if (startTimeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error) else SolidColor(
+                                    MaterialTheme.colorScheme.outline
+                                )
+                            )
+                        ) { Text(if (startTimePicked.isEmpty()) "Start Time" else "Time: $startTimePicked") }
+
+                        OutlinedButton(
+                            onClick = {
+                                val cal = Calendar.getInstance()
+                                TimePickerDialog(
+                                    context,
+                                    { _, h, m ->
+                                        cal.set(Calendar.HOUR_OF_DAY, h)
+                                        cal.set(Calendar.MINUTE, m)
+                                        endTimePicked = timeFormatter.format(cal.time)
+                                        endTimeError = ""
+                                    },
+                                    cal.get(Calendar.HOUR_OF_DAY),
+                                    cal.get(Calendar.MINUTE),
+                                    false
+                                ).show()
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = ButtonDefaults.outlinedButtonBorder.copy(
+                                brush = if (endTimeError.isNotEmpty()) SolidColor(MaterialTheme.colorScheme.error) else SolidColor(
+                                    MaterialTheme.colorScheme.outline
+                                )
+                            )
+                        ) { Text(if (endTimePicked.isEmpty()) "End Time" else "Time: $endTimePicked") }
+                    }
+
+                    // Confirm & Cancel
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                currentBooking.value?.let {
+                                    viewModel.deleteBookings(it.slotId)
+                                }
+                                viewModel.updateSlotStatus(slotId, SlotStatus.AVAILABLE)
+                                vehicleNo = ""
+                                vehicleType = ""
+                                userId = ""
+                                username = ""
+                                contactNo = ""
+                                priorityTag = ""
+                                datePicked = ""
+                                startTimePicked = ""
+                                endTimePicked = ""
+                                Toast.makeText(context, "Booking Cancelled", Toast.LENGTH_SHORT)
                                     .show()
                                 onNavigateUp()
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                        ) { Text("Cancel") }
+
+                        Button(onClick = {
+                            when {
+                                vehicleNo.isBlank() -> vehicleNoError = "Enter vehicle no."
+                                vehicleType.isBlank() -> vehicleTypeError = "Enter vehicle type"
+                                userId.isBlank() -> userIdError = "Enter user ID"
+                                username.isBlank() -> usernameError = "Enter username"
+                                contactNo.isBlank() -> contactNoError = "Enter contact no."
+                                contactNo.length < 10 -> contactNoError = "Enter valid mobile no"
+                                datePicked.isBlank() -> dateError = "Select date"
+                                startTimePicked.isBlank() -> startTimeError = "Select start time"
+                                endTimePicked.isBlank() -> endTimeError = "Select end time"
+                                priorityTag.isBlank() -> priorityTagError = "Select one"
+                                else -> {
+                                    val dateTimeFormat =
+                                        SimpleDateFormat("dd MMM yyyy hh:mm a", Locale.getDefault())
+                                    val dayFormat =
+                                        SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+
+                                    val bookingDate = Timestamp(dayFormat.parse(datePicked)!!)
+                                    val bookingStartTime =
+                                        Timestamp(dateTimeFormat.parse("$datePicked $startTimePicked")!!)
+                                    val bookingEndTime =
+                                        Timestamp(dateTimeFormat.parse("$datePicked $endTimePicked")!!)
+
+                                    val booking = BookingDetailsDataClass(
+                                        bookedBy = username,
+                                        vehicleNumber = vehicleNo,
+                                        vehicleType = vehicleType,
+                                        customUserId = userId,
+                                        userName = username,
+                                        slotId = slotId,
+                                        zone = zoneName,
+                                        date = bookingDate,
+                                        status = SlotStatus.RESERVED,
+                                        bookingStartTime = bookingStartTime,
+                                        bookingEndTime = bookingEndTime,
+                                        contactNo = contactNo,
+                                        priorityTag = priorityTag
+                                    )
+
+                                    viewModel.addBooking(booking)
+                                    viewModel.updateSlotStatus(slotId, SlotStatus.RESERVED)
+
+                                    Toast.makeText(context, "Booking reserved!", Toast.LENGTH_SHORT)
+                                        .show()
+                                    onNavigateUp()
+                                }
                             }
-                        }
-                    }, modifier = Modifier.weight(1f)) { Text("Confirm Booking") }
+                        }, modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = ButtonDefaults.buttonElevation(
+                                defaultElevation = 4.dp,
+                                pressedElevation = 8.dp
+                            )
+                        )
+                        { Text("Confirm Booking") }
+                    }
                 }
             }
         }

@@ -2,30 +2,24 @@ package com.vanshika.parkit.admin.screen.analytics.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vanshika.parkit.admin.viewmodel.BookingViewModel
@@ -38,22 +32,9 @@ fun ZoneUsagePieChart(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    /**
-     * Reads a Compose State<Map<String,Int>> from the ViewModel.
-    Important: Because it’s a State, the chart auto-updates
-    whenever the ViewModel changes it.
-     * */
-
     val usage by viewModel.zoneUsage
-
-    /**
-    Sums up all counts so we can compute slice percentages.
-    If total is 0, we use 1 to avoid division by zero (you’ll just see 0% slices).
-     * */
-
     val total = usage.values.sum().takeIf { it > 0 } ?: 1
 
-    // 15 distinct colors for zones
     val colors = listOf(
         Color(0xFF4285F4), Color(0xFF0F9D58), Color(0xFFF4B400), Color(0xFFDB4437),
         Color(0xFFAB47BC), Color(0xFF26C6DA), Color(0xFFEF5350), Color(0xFF8D6E63),
@@ -64,86 +45,129 @@ fun ZoneUsagePieChart(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        onClick = onClick
     ) {
-        Column(Modifier.padding(12.dp)) {
-            Text("Zone Usage", style = MaterialTheme.typography.titleMedium)
-
-            Spacer(Modifier.height(12.dp))
-
+        Column(Modifier.padding(16.dp)) {
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // 🔹 Fixed-size Pie chart
-                Box(
-                    modifier = Modifier.size(180.dp),
-                    contentAlignment = androidx.compose.ui.Alignment.Center
-                ) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        var startAngle = 0f
-                        usage.entries.forEachIndexed { index, entry ->
-                            val sweep = (entry.value.toFloat() / total) * 360f
-                            val percentage = (entry.value * 100f / total).toInt()
-
-                            // Draw slice
-                            drawArc(
-                                color = colors[index % colors.size],
-                                startAngle = startAngle,
-                                sweepAngle = sweep,
-                                useCenter = true,
-                                size = Size(size.width, size.height)
-                            )
-
-                            // Label inside slice
-                            val angleRad = Math.toRadians((startAngle + sweep / 2).toDouble())
-                            val radius = size.minDimension / 3
-                            val textX = (size.center.x + radius * cos(angleRad)).toFloat()
-                            val textY = (size.center.y + radius * sin(angleRad)).toFloat()
-
-                            drawContext.canvas.nativeCanvas.apply {
-                                drawText(
-                                    "$percentage%",
-                                    textX,
-                                    textY,
-                                    android.graphics.Paint().apply {
-                                        textSize = 32f
-                                        color = android.graphics.Color.WHITE
-                                        textAlign = android.graphics.Paint.Align.CENTER
-                                    }
-                                )
-                            }
-
-                            startAngle += sweep
-                        }
-                    }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.PieChart,
+                        contentDescription = "Zone Usage",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Zone Usage Distribution",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
                 }
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = "View Details",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
 
-                // 🔹 Scrollable legend
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(220.dp) // limit height so it doesn't cut off card
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    usage.entries.forEachIndexed { index, entry ->
-                        Row(
-                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            Spacer(Modifier.height(16.dp))
+
+            // Inner Card (Chart + Legend)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    Text("Zone Usage", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Pie Chart
+                        Box(
+                            modifier = Modifier
+                                .size(180.dp)
+                                .align(Alignment.CenterVertically),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .padding(end = 6.dp)
-                                    .background(colors[index % colors.size])
-                            )
-                            Text(
-                                "${entry.key}: ${entry.value}",
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Canvas(modifier = Modifier.fillMaxSize()) {
+                                var startAngle = 0f
+                                usage.entries.forEachIndexed { index, entry ->
+                                    val sweep = (entry.value.toFloat() / total) * 360f
+                                    val percentage = (entry.value * 100f / total).toInt()
+
+                                    // Draw slice
+                                    drawArc(
+                                        color = colors[index % colors.size],
+                                        startAngle = startAngle,
+                                        sweepAngle = sweep,
+                                        useCenter = true,
+                                        size = Size(size.width, size.height)
+                                    )
+
+                                    // Label inside slice
+                                    val angleRad = Math.toRadians((startAngle + sweep / 2).toDouble())
+                                    val radius = size.minDimension / 3
+                                    val textX = (size.center.x + radius * cos(angleRad)).toFloat()
+                                    val textY = (size.center.y + radius * sin(angleRad)).toFloat()
+
+                                    drawContext.canvas.nativeCanvas.apply {
+                                        drawText(
+                                            "$percentage%",
+                                            textX,
+                                            textY,
+                                            android.graphics.Paint().apply {
+                                                textSize = 32f
+                                                color = android.graphics.Color.WHITE
+                                                textAlign = android.graphics.Paint.Align.CENTER
+                                            }
+                                        )
+                                    }
+
+                                    startAngle += sweep
+                                }
+                            }
+                        }
+
+                        // Legend
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(220.dp)
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            usage.entries.forEachIndexed { index, entry ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(12.dp)
+                                            .background(colors[index % colors.size])
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(
+                                        "${entry.key}: ${entry.value}",
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
                         }
                     }
                 }
