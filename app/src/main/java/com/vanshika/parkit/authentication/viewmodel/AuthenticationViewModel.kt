@@ -74,6 +74,17 @@ class AuthenticationViewModel @Inject constructor() : ViewModel() {
 
     fun updatePassword(userId: String, newPassword: String, context: Context) {
         val currentUser = auth.currentUser
+        val passwordRegex = Regex("^[A-Za-z0-9_]+$")
+
+        if (!passwordRegex.matches(newPassword)) {
+            Toast.makeText(
+                context,
+                "Password can only contain letters, numbers, and underscores (_)",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
         if (currentUser != null && currentUser.uid == userId) {
             _isLoading.value = true
             currentUser.updatePassword(newPassword)
@@ -161,15 +172,40 @@ class AuthenticationViewModel @Inject constructor() : ViewModel() {
     fun forgotPassword(email: String) {
         _isLoading.value = true
         _passwordResetStatus.value = null
-        auth.sendPasswordResetEmail(email)
-            .addOnCompleteListener { task ->
-                _isLoading.value = false
-                if (task.isSuccessful) {
-                    _passwordResetStatus.value = true
-                } else {
+
+        if (email.isBlank()) {
+            _errorMessage.value = "Please enter an email address"
+            _isLoading.value = false
+            _passwordResetStatus.value = false
+            return
+        }
+
+        firestore.collection("users")
+            .whereEqualTo("email", email)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                if (querySnapshot.isEmpty) {
+                    _isLoading.value = false
                     _passwordResetStatus.value = false
-                    _errorMessage.value = task.exception?.message ?: "Failed to send reset email"
+                    _errorMessage.value = "No account found with this email"
+                } else {
+                    auth.sendPasswordResetEmail(email)
+                        .addOnCompleteListener { task ->
+                            _isLoading.value = false
+                            if (task.isSuccessful) {
+                                _passwordResetStatus.value = true
+                            } else {
+                                _passwordResetStatus.value = false
+                                _errorMessage.value =
+                                    task.exception?.message ?: "Failed to send reset email"
+                            }
+                        }
                 }
+            }
+            .addOnFailureListener { exception ->
+                _isLoading.value = false
+                _passwordResetStatus.value = false
+                _errorMessage.value = exception.message ?: "Error checking user email"
             }
     }
 }

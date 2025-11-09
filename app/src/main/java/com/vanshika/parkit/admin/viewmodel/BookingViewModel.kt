@@ -83,37 +83,6 @@ class BookingViewModel @Inject constructor(
         }
     }
 
-//    fun sendNotificationToUser(notification: NotificationDataClass) {
-//        if (notification.userId == null) {
-//            sendNotificationToAllUsers(notification)
-//        } else {
-//            sendNotificationToSingleUser(notification.userId, notification)
-//        }
-//    }
-//
-//    private fun sendNotificationToSingleUser(userId: String, notification: NotificationDataClass) {
-//        val db = Firebase.firestore
-//        db.collection("users")
-//            .document(userId)
-//            .collection("notifications")
-//            .add(notification)
-//    }
-//
-//    private fun sendNotificationToAllUsers(notification: NotificationDataClass) {
-//        val db = Firebase.firestore
-//        db.collection("users")
-//            .get()
-//            .addOnSuccessListener { querySnapshot ->
-//                for (document in querySnapshot.documents) {
-//                    val userId = document.id
-//                    db.collection("users")
-//                        .document(userId)
-//                        .collection("notifications")
-//                        .add(notification)
-//                }
-//            }
-//    }
-
     private val _zoneUsage = mutableStateOf<Map<String, Int>>(emptyMap())
     val zoneUsage: State<Map<String, Int>> = _zoneUsage
     fun loadZoneUsage() { bookingRepository.fetchZoneUsage { usage -> _zoneUsage.value = usage } }

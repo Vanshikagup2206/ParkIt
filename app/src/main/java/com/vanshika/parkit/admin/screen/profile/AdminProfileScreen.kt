@@ -1,27 +1,63 @@
 package com.vanshika.parkit.admin.screen.profile
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -30,6 +66,11 @@ import coil.compose.rememberAsyncImagePainter
 import com.vanshika.parkit.R
 import com.vanshika.parkit.admin.viewmodel.ProfileViewModel
 import com.vanshika.parkit.authentication.viewmodel.AuthenticationViewModel
+import com.vanshika.parkit.ui.theme.BlueAccent
+import com.vanshika.parkit.ui.theme.ThemePreference
+import com.vanshika.parkit.user.screen.profile.ProfileOption
+import com.vanshika.parkit.user.screen.profile.ProfileOptionSwitch
+import com.vanshika.parkit.user.screen.profile.neumorphic
 
 @Composable
 fun AdminProfileScreen(
@@ -39,6 +80,12 @@ fun AdminProfileScreen(
     authViewModel: AuthenticationViewModel = viewModel(),
     profileViewModel: ProfileViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val isDark by ThemePreference.getTheme(context).collectAsState(initial = false)
+    val backgroundColor = if (isDark) Color(0xFF1E1E1E) else Color(0xFFE9EEF5)
+    val lightShadow = if (isDark) Color(0xFF2A2A2A) else Color.White
+    val darkShadow = if (isDark) Color(0xFF141414) else Color(0xFFBEC8D2)
+
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
@@ -48,7 +95,6 @@ fun AdminProfileScreen(
     val userProfile by profileViewModel.user.collectAsStateWithLifecycle()
     val isSaving by profileViewModel.isSaving.collectAsStateWithLifecycle()
     val profileUpdated by profileViewModel.profileUpdated.collectAsStateWithLifecycle()
-    val context = LocalContext.current
 
     LaunchedEffect(authUser?.uid) {
         authUser?.uid?.let {
@@ -64,137 +110,282 @@ fun AdminProfileScreen(
         }
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(20.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+            .background(backgroundColor)
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp)
     ) {
-        // Profile section
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    val profileImageModifier = Modifier
-                        .size(100.dp)
+            // Profile Image
+            Box(contentAlignment = Alignment.BottomEnd) {
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .neumorphic(lightShadow, darkShadow, backgroundColor, 16.dp)
                         .clip(CircleShape)
                         .clickable { showProfileDialog = true }
-                    userProfile?.profilePicUrl?.let {
-                        Image(
-                            painter = rememberAsyncImagePainter(model = it),
-                            contentDescription = "Profile Picture",
-                            modifier = profileImageModifier,
-                            contentScale = ContentScale.Crop
-                        )
-                    } ?: Icon(
-                        imageVector = Icons.Default.Person,
+                ) {
+                    val painter = if (userProfile?.profilePicUrl != null)
+                        rememberAsyncImagePainter(model = userProfile?.profilePicUrl)
+                    else
+                        painterResource(R.drawable.baseline_person_24)
+                    Image(
+                        painter = painter,
                         contentDescription = "Profile Picture",
-                        modifier = profileImageModifier,
-                        tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(BlueAccent)
+                        .border(2.dp, backgroundColor, CircleShape)
+                        .clickable { showEditProfileDialog = true },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+
+            // Name + Email
             Text(
                 text = userProfile?.userName ?: "Admin",
                 fontSize = 22.sp,
-                color = MaterialTheme.colorScheme.onBackground
+                fontWeight = FontWeight.SemiBold,
+                color = if (isDark) Color.White else Color(0xFF1A1A1A)
             )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+            Text(
+                text = authUser?.email ?: "Unknown",
+                fontSize = 15.sp,
+                color = if (isDark) Color(0xFFAAAAAA) else Color.Gray
+            )
+
+            // Options (Neumorphic)
+            ProfileOption(
+                title = "Change Password",
+                iconRes = R.drawable.baseline_password_24,
+                lightShadow = lightShadow,
+                darkShadow = darkShadow,
+                backgroundColor = backgroundColor
             ) {
-                Text(
-                    text = "ID: ${authUser?.email ?: "Unknown"}",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                IconButton(onClick = { showEditProfileDialog = true }) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit Profile",
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
+                showChangePasswordDialog = true
             }
-        }
 
-        Spacer(modifier = Modifier.height(15.dp))
+            ProfileOptionSwitch(
+                title = "Theme Toggle",
+                iconRes = R.drawable.baseline_app_shortcut_24,
+                lightShadow = lightShadow,
+                darkShadow = darkShadow,
+                backgroundColor = backgroundColor,
+                checked = isDarkTheme,
+                onCheckedChange = { onThemeChange(it) }
+            )
 
-        // New options section as rounded cards
-        NewProfileOptions(
-            isDarkTheme = isDarkTheme,
-            onThemeChange = onThemeChange,
-            onChangePassword = { showChangePasswordDialog = true },
-            onContactSupport = {
+            ProfileOption(
+                title = "Contact Support",
+                iconRes = R.drawable.baseline_mail_outline_24,
+                lightShadow = lightShadow,
+                darkShadow = darkShadow,
+                backgroundColor = backgroundColor
+            ) {
                 val intent = Intent(Intent.ACTION_SENDTO).apply {
                     data = Uri.parse("mailto:vanshikagupta0009@gmail.com")
                     putExtra(Intent.EXTRA_SUBJECT, "Support Request")
                 }
                 context.startActivity(intent)
-            },
-            onPrivacyPolicy = {
+            }
+
+            ProfileOption(
+                title = "Privacy Policy",
+                iconRes = R.drawable.baseline_privacy_tip_24,
+                lightShadow = lightShadow,
+                darkShadow = darkShadow,
+                backgroundColor = backgroundColor
+            ) {
                 val url = "https://yourapp.com/privacy"
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                 context.startActivity(intent)
-            },
-            onLogout = { showLogoutDialog = true }
-        )
+            }
 
-        // App version at bottom
-        Text(
-            text = "Version 1.0.0",
-            fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
+            ProfileOption(
+                title = "Logout",
+                iconRes = R.drawable.baseline_lock_open_24,
+                lightShadow = lightShadow,
+                darkShadow = darkShadow,
+                backgroundColor = backgroundColor,
+                isLogout = true
+            ) {
+                showLogoutDialog = true
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Version 1.0.0",
+                fontSize = 13.sp,
+                color = if (isDark) Color.Gray else Color.DarkGray.copy(alpha = 0.7f)
+            )
+        }
     }
 
     // Change Password Dialog
     if (showChangePasswordDialog) {
+        var step by remember { mutableStateOf(1) } // 1: send OTP, 2: verify OTP, 3: new password
+        var generatedOtp by remember { mutableStateOf("") }
+        var enteredOtp by remember { mutableStateOf(List(6) { "" }) } // 6 digits
         var newPassword by remember { mutableStateOf("") }
         var confirmPassword by remember { mutableStateOf("") }
+
+        val userEmail = authUser?.email ?: ""
+        val focusManager = LocalFocusManager.current
+        val focusRequesters = List(6) { FocusRequester() }
+
+        fun resetOtp() {
+            enteredOtp = List(6) { "" }
+        }
+
         AlertDialog(
             onDismissRequest = { showChangePasswordDialog = false },
             title = { Text("Change Password") },
             text = {
-                Column {
-                    OutlinedTextField(
-                        value = newPassword,
-                        onValueChange = { newPassword = it },
-                        label = { Text("New Password") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = confirmPassword,
-                        onValueChange = { confirmPassword = it },
-                        label = { Text("Confirm Password") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    when (step) {
+                        1 -> {
+                            Text("An OTP will be sent to your registered email: $userEmail")
+                        }
+
+                        2 -> {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                enteredOtp.forEachIndexed { index, value ->
+                                    OutlinedTextField(
+                                        value = value,
+                                        onValueChange = { input ->
+                                            if (input.length <= 1 && input.all { it.isDigit() }) {
+                                                enteredOtp = enteredOtp.toMutableList()
+                                                    .also { it[index] = input }
+
+                                                if (input.isNotEmpty() && index < 5) {
+                                                    focusRequesters[index + 1].requestFocus()
+                                                }
+                                            } else if (input.isEmpty() && index > 0) {
+                                                focusRequesters[index - 1].requestFocus()
+                                            }
+                                        },
+                                        singleLine = true,
+                                        textStyle = LocalTextStyle.current.copy(
+                                            textAlign = TextAlign.Center,
+                                            fontSize = 20.sp
+                                        ),
+                                        modifier = Modifier
+                                            .width(38.dp)
+                                            .height(45.dp)
+                                            .focusRequester(focusRequesters[index]),
+                                        keyboardOptions = KeyboardOptions(
+                                            keyboardType = KeyboardType.Number,
+                                            imeAction = if (index == 5) ImeAction.Done
+                                            else ImeAction.Next
+                                        ),
+                                        keyboardActions = KeyboardActions(
+                                            onNext = {
+                                                if (index < 5) focusRequesters[index + 1].requestFocus()
+                                            },
+                                            onDone = {
+                                                focusManager.clearFocus()
+                                            }
+                                        )
+                                    )
+                                }
+                            }
+                        }
+
+                        3 -> {
+                            OutlinedTextField(
+                                value = newPassword,
+                                onValueChange = { newPassword = it },
+                                label = { Text("New Password") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = confirmPassword,
+                                onValueChange = { confirmPassword = it },
+                                label = { Text("Confirm Password") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        if (newPassword.isNotEmpty() && newPassword == confirmPassword) {
-                            authUser?.uid?.let { uid ->
-                                authViewModel.updatePassword(uid, newPassword, context)
+                Button(onClick = {
+                    when (step) {
+                        1 -> {
+                            // Generate OTP and send to email
+                            generatedOtp = (100000..999999).random().toString()
+                            sendOtpEmail(userEmail, generatedOtp, context)
+                            Toast.makeText(context, "OTP sent to $userEmail", Toast.LENGTH_SHORT)
+                                .show()
+                            step = 2
+                            resetOtp()
+                        }
+
+                        2 -> {
+                            val enteredOtpStr = enteredOtp.joinToString("")
+                            if (enteredOtpStr == generatedOtp) {
+                                step = 3
+                            } else {
+                                Toast.makeText(context, "Invalid OTP", Toast.LENGTH_SHORT).show()
                             }
-                            showChangePasswordDialog = false
+                        }
+
+                        3 -> {
+                            if (newPassword.isNotEmpty() && newPassword == confirmPassword) {
+                                authUser?.uid?.let { uid ->
+                                    authViewModel.updatePassword(uid, newPassword, context)
+                                }
+                                Toast.makeText(context, "Password updated!", Toast.LENGTH_SHORT)
+                                    .show()
+                                showChangePasswordDialog = false
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Passwords do not match",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
                     }
-                ) { Text("Update") }
+                }) {
+                    Text(
+                        when (step) {
+                            1 -> "Send OTP"
+                            2 -> "Verify OTP"
+                            else -> "Update Password"
+                        }
+                    )
+                }
             },
             dismissButton = {
                 TextButton(onClick = { showChangePasswordDialog = false }) {
@@ -338,128 +529,26 @@ fun AdminProfileScreen(
     }
 }
 
-// --------- Modern Option Cards ----------
+fun sendOtpEmail(userEmail: String, otp: String, context: Context) {
+    val subject = "Your OTP for Password Change"
+    val body = """
+        Hello,
+        
+        Your OTP to change your password is: $otp
+        
+        Please do not share it with anyone.
+    """.trimIndent()
 
-@Composable
-fun NewProfileOptions(
-    isDarkTheme: Boolean,
-    onThemeChange: (Boolean) -> Unit,
-    onChangePassword: () -> Unit,
-    onContactSupport: () -> Unit,
-    onPrivacyPolicy: () -> Unit,
-    onLogout: () -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ProfileOptionCard(
-            iconRes = R.drawable.baseline_password_24,
-            iconTint = MaterialTheme.colorScheme.primary,
-            text = "Change Password",
-            onClick = onChangePassword
-        )
-        ProfileOptionSwitchCard(
-            iconRes = R.drawable.baseline_app_shortcut_24,
-            iconTint = MaterialTheme.colorScheme.primary,
-            text = "App Theme toggle",
-            checked = isDarkTheme,
-            onCheckedChange = onThemeChange
-        )
-        ProfileOptionCard(
-            iconRes = R.drawable.baseline_mail_outline_24,
-            iconTint = MaterialTheme.colorScheme.primary,
-            text = "Contact Support",
-            onClick = onContactSupport
-        )
-        ProfileOptionCard(
-            iconRes = R.drawable.baseline_privacy_tip_24,
-            iconTint = MaterialTheme.colorScheme.primary,
-            text = "Privacy Policy",
-            onClick = onPrivacyPolicy
-        )
-        ProfileOptionCard(
-            iconRes = R.drawable.baseline_lock_open_24,
-            iconTint = MaterialTheme.colorScheme.primary,
-            text = "Logout",
-            onClick = onLogout
-        )
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "message/rfc822" // forces only email apps
+        putExtra(Intent.EXTRA_EMAIL, arrayOf(userEmail))
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        putExtra(Intent.EXTRA_TEXT, body)
     }
-}
 
-@Composable
-fun ProfileOptionCard(
-    iconRes: Int,
-    iconTint: Color,
-    text: String,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                painter = painterResource(id = iconRes),
-                contentDescription = text,
-                tint = iconTint,
-                modifier = Modifier.size(28.dp)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = text,
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
-
-@Composable
-fun ProfileOptionSwitchCard(
-    iconRes: Int,
-    iconTint: Color,
-    text: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                painter = painterResource(id = iconRes),
-                contentDescription = text,
-                tint = iconTint,
-                modifier = Modifier.size(28.dp)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = text,
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-            Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.primary,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.onSurface,
-                    checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    uncheckedTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-                )
-            )
-        }
+    try {
+        context.startActivity(Intent.createChooser(intent, "Send OTP Email"))
+    } catch (e: Exception) {
+        Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
     }
 }
