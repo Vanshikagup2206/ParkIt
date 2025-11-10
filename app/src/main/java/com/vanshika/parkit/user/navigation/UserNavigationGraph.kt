@@ -1,5 +1,7 @@
 package com.vanshika.parkit.user.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -13,7 +15,7 @@ import com.vanshika.parkit.MainNavRoutes
 import com.vanshika.parkit.authentication.viewmodel.AuthenticationViewModel
 import com.vanshika.parkit.ui.theme.ThemePreference
 import com.vanshika.parkit.user.screen.bookings.UserBookingScreen
-import com.vanshika.parkit.user.screen.home.DirectionScreen
+import com.vanshika.parkit.user.screen.home.MakeReservation
 import com.vanshika.parkit.user.screen.home.ReportScreen
 import com.vanshika.parkit.user.screen.home.UserHomeScreen
 import com.vanshika.parkit.user.screen.notifications.UserNotificationScreen
@@ -30,7 +32,31 @@ fun UserNavigationGraph(
     NavHost(
         navController = navHostController,
         startDestination = UserBottomNavItem.Home.route,
-        modifier = modifier
+        modifier = modifier,
+        enterTransition = {
+            slideIntoContainer(
+                AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(500)
+            )
+        },
+        exitTransition = {
+            slideOutOfContainer(
+                AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(500)
+            )
+        },
+        popEnterTransition = {
+            slideIntoContainer(
+                AnimatedContentTransitionScope.SlideDirection.Right,
+                animationSpec = tween(500)
+            )
+        },
+        popExitTransition = {
+            slideOutOfContainer(
+                AnimatedContentTransitionScope.SlideDirection.Right,
+                animationSpec = tween(500)
+            )
+        }
     ) {
         composable(UserBottomNavItem.Home.route) {
             UserHomeScreen(navHostController = navHostController)
@@ -78,11 +104,11 @@ fun UserNavigationGraph(
             )
         }
 
-        composable(UserNavRoutes.DirectionScreen.route) { navBackStackEntry ->
+        composable(UserNavRoutes.MakeReservationScreen.route) { navBackStackEntry ->
             val slotId = navBackStackEntry.arguments?.getString("slotId") ?: ""
             val zoneName = navBackStackEntry.arguments?.getString("zoneName") ?: ""
 
-            DirectionScreen(
+            MakeReservation(
                 slotId = slotId,
                 zoneName = zoneName,
                 onNavigateUp = { navHostController.navigateUp() }

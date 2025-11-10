@@ -4,43 +4,32 @@ import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.vanshika.parkit.admin.screen.home.HorizontalPillar
 import com.vanshika.parkit.admin.screen.home.ParkingSlotData
 import com.vanshika.parkit.admin.screen.home.SlotStatus
 import com.vanshika.parkit.admin.viewmodel.BookingViewModel
@@ -53,28 +42,84 @@ fun UserParkingLotScreen(
     viewModel: BookingViewModel = hiltViewModel()
 ) {
     val slotsMap = viewModel.slotsMap
-
     val context = LocalContext.current
     val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surface
+                    )
+                )
+            )
     ) {
-        // Entrance Header
+        // Enhanced Entrance Header with gradient
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(40.dp)
-                .background(MaterialTheme.colorScheme.primary),
+                .height(60.dp)
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.primaryContainer
+                        )
+                    )
+                )
+                .shadow(4.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "ENTRANCE",
-                color = MaterialTheme.colorScheme.onPrimary,
-                fontSize = 16.sp
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowDownward,
+                    contentDescription = "Entrance",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "ENTRANCE",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.ArrowDownward,
+                    contentDescription = "Entrance",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        // Legend Section
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(12.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                LegendItem("Available", if (isDarkTheme) Color(0xFFA5D6A7) else Color(0xFFC8E6C9))
+                LegendItem("Booked", if (isDarkTheme) Color(0xFFFFCC80) else Color.Yellow)
+                LegendItem("Reserved", Color.Red)
+                LegendItem("Maintenance", Color.Gray)
+            }
         }
 
         // Parking Area
@@ -85,7 +130,7 @@ fun UserParkingLotScreen(
                 .padding(12.dp)
         ) {
             // Left Blocks
-            Column(modifier = Modifier.weight(0.55f)) {
+            Column(modifier = Modifier.weight(0.62f)) {
                 val blocks = listOf(
                     "A" to 4, "B" to 4, "C" to 4, "D" to 4, "E" to 3,
                     "F" to 3, "G" to 2, "H" to 2, "I" to 2, "J" to 2,
@@ -105,80 +150,191 @@ fun UserParkingLotScreen(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Middle Path
+            // Enhanced Middle Path
             Box(
                 modifier = Modifier
-                    .width(50.dp)
-                    .height(840.dp)
+                    .width(60.dp)
+                    .height(890.dp)
                     .fillMaxHeight()
-                    .background(MaterialTheme.colorScheme.secondary),
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.secondaryContainer,
+                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
+                            )
+                        )
+                    )
+                    .border(
+                        2.dp,
+                        MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                        RoundedCornerShape(8.dp)
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Path",
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 14.sp,
-                    modifier = Modifier.padding(8.dp)
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DirectionsCar,
+                        contentDescription = "Path",
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Text(
+                        text = "DRIVE\nWAY",
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Right Side
+            // Enhanced Right Side
             Column(
                 modifier = Modifier
-                    .weight(0.4f)
-                    .fillMaxHeight()
+                    .weight(0.33f)
+                    .fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(
+                // Reserved Area
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(350.dp)
-                        .background(Color.Red),
-                    contentAlignment = Alignment.Center
+                        .height(370.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFF6B6B).copy(alpha = 0.9f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Text(
-                        text = "Reserved Area",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 16.sp
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Block,
+                                contentDescription = "Reserved",
+                                tint = Color.White,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "RESERVED AREA",
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Text(
+                                text = "No Parking",
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
+                // Pillar
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(20.dp)
-                        .background(MaterialTheme.colorScheme.outline),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Pillar",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 12.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(450.dp)
-                        .background(
-                            color = if (isDarkTheme) Color(0xFFA5D6A7) else Color(0xFFC8E6C9)
+                        .height(24.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.outline)
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                            RoundedCornerShape(4.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Space for Parking",
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.primary
+                        text = "⬛ PILLAR ⬛",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
                     )
+                }
+
+                // Extra Parking Space
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(460.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isDarkTheme) Color(0xFFA5D6A7) else Color(0xFFC8E6C9)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocalParking,
+                                contentDescription = "Parking",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "EXTRA PARKING",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Text(
+                                text = "Space Available",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun LegendItem(label: String, color: Color) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(16.dp)
+                .clip(CircleShape)
+                .background(color)
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), CircleShape)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
@@ -191,10 +347,12 @@ fun UserParkingRow(
     navController: NavHostController,
     viewModel: BookingViewModel
 ) {
-    Column {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentWidth(Alignment.End),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             verticalAlignment = Alignment.CenterVertically
         ) {
             for (i in slotsCount downTo 1) {
@@ -202,24 +360,23 @@ fun UserParkingRow(
                 slotsMap[slotId]?.let { slot ->
                     UserParkingSlot(slot, navController, viewModel)
                 }
-                if (i != 1) Spacer(modifier = Modifier.width(8.dp))
             }
         }
 
         if (showPillarsBelow) {
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .wrapContentWidth(Alignment.End)
                     .padding(top = 4.dp),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End)
             ) {
                 repeat(slotsCount) {
-                    HorizontalPillar()
-                    if (it != slotsCount - 1) Spacer(modifier = Modifier.width(24.dp))
+                    UserHorizontalPillar()
                 }
             }
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
         }
     }
 }
@@ -231,52 +388,73 @@ fun UserParkingSlot(
     viewModel: BookingViewModel
 ) {
     var showDialog by remember { mutableStateOf(false) }
-
     val context = LocalContext.current
     val isDarkTheme by ThemePreference.getTheme(context).collectAsState(initial = false)
 
-    Box(
+    Card(
         modifier = Modifier
-            .size(width = 35.dp, height = 36.dp)
-            .border(1.dp, MaterialTheme.colorScheme.onSurface)
-            .background(
-                when (slotData.status.value) {
-                    SlotStatus.RESERVED -> Color.Red        // fixed
-                    SlotStatus.AVAILABLE -> if (isDarkTheme) Color(0xFFA5D6A7) else Color(0xFFC8E6C9)
-                    SlotStatus.BOOKED -> if (isDarkTheme) Color(0xFFFFCC80) else Color.Yellow     // fixed
-                    SlotStatus.MAINTENANCE -> Color.Gray    // fixed
-                }
-            )
+            .size(width = 34.dp, height = 36.dp)
             .onGloballyPositioned { cords ->
                 val position = cords.positionInRoot()
                 Log.d("ParkingSlot", "ID: ${slotData.id}, Position: $position")
                 viewModel.updateSlotPosition(slotData.id, position)
             }
             .clickable { showDialog = true },
-        contentAlignment = Alignment.Center
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = when (slotData.status.value) {
+                SlotStatus.RESERVED -> Color(0xFFFF6B6B)
+                SlotStatus.AVAILABLE -> if (isDarkTheme) Color(0xFFA5D6A7) else Color(0xFFC8E6C9)
+                SlotStatus.BOOKED -> if (isDarkTheme) Color(0xFFFFCC80) else Color(0xFFFFEB3B)
+                SlotStatus.MAINTENANCE -> Color(0xFFBDBDBD)
+            }
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
-        Text(
-            text = slotData.id,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.primary
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .border(
+                    width = 2.dp,
+                    color = when (slotData.status.value) {
+                        SlotStatus.RESERVED -> Color(0xFFD32F2F)
+                        SlotStatus.AVAILABLE -> if (isDarkTheme) Color(0xFF81C784) else Color(0xFF66BB6A)
+                        SlotStatus.BOOKED -> Color(0xFFFFA726)
+                        SlotStatus.MAINTENANCE -> Color(0xFF757575)
+                    },
+                    shape = RoundedCornerShape(8.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = slotData.id,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = when (slotData.status.value) {
+                    SlotStatus.RESERVED -> Color.White
+                    SlotStatus.AVAILABLE -> Color(0xFF2E7D32)
+                    SlotStatus.BOOKED -> Color(0xFFE65100)
+                    SlotStatus.MAINTENANCE -> Color.White
+                }
+            )
+        }
     }
 
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Slot ${slotData.id}") },
+            title = { Text("Slot ${slotData.id}", fontWeight = FontWeight.Bold) },
             text = {
-                Column {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     TextButton(onClick = {
                         navController.navigate(
-                            UserNavRoutes.DirectionScreen.createRoute(
+                            UserNavRoutes.MakeReservationScreen.createRoute(
                                 slotData.id,
                                 slotData.zoneName
                             )
                         )
                         showDialog = false
-                    }) { Text("See Directions") }
+                    }) { Text("🚗 Request for booking") }
 
                     TextButton(onClick = {
                         navController.navigate(
@@ -286,12 +464,27 @@ fun UserParkingSlot(
                             )
                         )
                         showDialog = false
-                    }) { Text("Make Report / Issue") }
+                    }) { Text("⚠️ Report Issue") }
                 }
             },
             confirmButton = {},
             dismissButton = {}
         )
+    }
+}
+
+@Composable
+fun UserHorizontalPillar() {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        repeat(2) {
+            Box(
+                modifier = Modifier
+                    .size(width = 8.dp, height = 8.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.outline)
+                    .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f), CircleShape)
+            )
+        }
     }
 }
 
